@@ -1,11 +1,13 @@
-# QuerySentinel
+# 🔭 QuerySentinel
 JPA Query Verification & Performance Testing Annotations
 
-**QuerySentinel** is a lightweight annotation-based library that helps validate **SQL query count**, **execution time**, and **database access** in `Spring Boot` and `JPA` test code.
+**QuerySentinel** is an annotation-based library for validating **SQL query count**, **execution time**, and **database access** in `Spring Boot` + `JPA` test code.  
+It is built without any external APM or JDBC proxy dependencies — instead, it wraps core JDBC components (`PreparedStatement`, `Connection`, and `DataSource`) directly for efficient and low-level query tracking.
 
-> ✅ Catch performance regressions during refactoring <br>
-> ✅ Expressive annotations like `@ExpectQuery`, `@ExpectNoDb`, `@ExpectTime` <br>
-> ✅ Detect `N+1 queries`, `unnecessary database access`, and `performance bottlenecks` in your tests <br>
+> ✅ Catch performance regressions during refactoring  
+> ✅ Intuitive annotations like `@ExpectQuery`, `@ExpectTime`, `@ExpectNoDb`  
+> ✅ Detect `N+1 queries`, `unintended DB calls`, and `slow queries` during testing  
+> ✅ No external agents — just pure, lightweight instrumentation
 
 🇰🇷 [Korean](./README.ko.md)
 
@@ -40,6 +42,18 @@ dependencies {
 
 ```groovy
 testImplementation files('libs/querysentinel-1.0.0.jar')
+```
+
+### Optional: Test Logging Configuration for Better Output(build.gradle)
+```groovy
+test {
+    useJUnitPlatform()
+
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+}
 ```
 
 ### Test Code Example
@@ -84,7 +98,7 @@ Caller  : com.example.demo.UserRepositoryTest#saveUser:33
 SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
 Caller  : com.example.demo.UserRepositoryTest#loadUsers:37
 --------------------------------------------------------
- Total Queries: 3
+✅ Total Queries: 3
 ```
 
 ---
@@ -115,11 +129,11 @@ spring boot jpa query count  <br>
 hibernate query assertion  <br>
 junit performance test for SQL  <br>
 springboot prevent n+1 queries  <br>
-springboot @Transactional query detection  <br>
 jpa test query logging  <br>
 junit measure sql execution time  <br>
 test if service uses cache instead of db  <br>
-detect unexpected database access in unit test
+custom datasource jdbc tracking  <br>
+jdbc proxy alternative for JPA testing  <br>
 
 </details>
 

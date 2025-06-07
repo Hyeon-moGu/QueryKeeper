@@ -1,10 +1,13 @@
-# QuerySentinel
+# 🔭 QuerySentinel
 JPA 쿼리 실행 검증 & 성능 테스트 어노테이션
+
 **QuerySentinel**은 `Spring Boot` 기반 `JPA`, `Hibernate` 테스트 코드에서 실행되는 **SQL 쿼리 수**, **실행 시간**, **DB 접근 여부** 등을 어노테이션 기반으로 자동 검증하는 테스트 라이브러리입니다.
+외부 APM 또는 JDBC 프록시 종속성 없이 구축되었으며, 효율적인 저수준 쿼리 추적을 위해 핵심 JDBC 구성 요소(PreparedStatement, Connection 및 DataSource)를 직접 래핑합니다.
 
 > ✅ 쿼리 성능 회귀를 테스트 단계에서 감지  
 > ✅ `@ExpectQuery`, `@ExpectNoDb`, `@ExpectTime` 같은 직관적인 어노테이션으로 구현  
 > ✅ `N+1 문제`, `불필요한 DB 호출`, `슬로우 쿼리`를 테스트 중 탐지
+> ✅ `PreparedStatement`, `Connection` 및 `DataSource`를 직접 래핑
 
 ---
 
@@ -36,6 +39,18 @@ dependencies {
 #### B. 직접 JAR 파일을 사용하는 경우
 ```groovy
 testImplementation files('libs/querysentinel-1.0.0.jar')
+```
+
+### 옵션: 테스트 결과 출력(build.gradle 추가)
+```groovy
+test {
+    useJUnitPlatform()
+
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+}
 ```
 
 #### 코드예시
@@ -101,18 +116,3 @@ dependencies {
 ```
 
 ---
-
-<details>
-<summary> 관련 키워드 </summary>
-
-spring boot jpa query count  <br>
-hibernate query assertion  <br>
-junit performance test for SQL  <br>
-springboot prevent n+1 queries  <br>
-springboot @Transactional query detection  <br>
-jpa test query logging  <br>
-junit measure sql execution time  <br>
-test if service uses cache instead of db  <br>
-detect unexpected database access in unit test
-
-</details>
