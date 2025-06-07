@@ -1,0 +1,158 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.querysentinel",
+    "module": "querysentinel",
+    "version": "1.0.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.1"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "files": [
+        {
+          "name": "querysentinel-1.0.0.jar",
+          "url": "querysentinel-1.0.0.jar",
+          "size": 24623,
+          "sha512": "7e4fab60d2e45e7884e9a720d7a2d408a0ac2d2e9834c2b2a6e245ca6441adf1120dca6d80f45f6afdf87a0dc4bf77d3036b8d98ec161a53b94aa0681b6bbe16",
+          "sha256": "68d6d34ed8f37b33cc6fb45a42a256e416c765ce7a3812879f84dea88282a3ae",
+          "sha1": "f2f62f15f9db4cef6d79ca1aed9c6fcb75b2e0bd",
+          "md5": "c919f8cf35bd3c37e107be0d7042bf75"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "org.springframework",
+          "module": "spring-test",
+          "version": {
+            "requires": "6.1.5"
+          }
+        },
+        {
+          "group": "org.hibernate.orm",
+          "module": "hibernate-core",
+          "version": {
+            "requires": "6.3.1.Final"
+          }
+        },
+        {
+          "group": "org.junit.jupiter",
+          "module": "junit-jupiter",
+          "version": {
+            "requires": "5.9.3"
+          }
+        },
+        {
+          "group": "org.slf4j",
+          "module": "slf4j-api",
+          "version": {
+            "requires": "2.0.13"
+          }
+        },
+        {
+          "group": "ch.qos.logback",
+          "module": "logback-classic",
+          "version": {
+            "requires": "1.4.14"
+          }
+        },
+        {
+          "group": "org.springframework.boot",
+          "module": "spring-boot-autoconfigure",
+          "version": {
+            "requires": "3.2.5"
+          }
+        },
+        {
+          "group": "org.springframework.boot",
+          "module": "spring-boot-starter-data-jpa",
+          "version": {
+            "requires": "3.2.5"
+          }
+        },
+        {
+          "group": "org.springframework",
+          "module": "spring-jdbc",
+          "version": {
+            "requires": "6.1.5"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "querysentinel-1.0.0.jar",
+          "url": "querysentinel-1.0.0.jar",
+          "size": 24623,
+          "sha512": "7e4fab60d2e45e7884e9a720d7a2d408a0ac2d2e9834c2b2a6e245ca6441adf1120dca6d80f45f6afdf87a0dc4bf77d3036b8d98ec161a53b94aa0681b6bbe16",
+          "sha256": "68d6d34ed8f37b33cc6fb45a42a256e416c765ce7a3812879f84dea88282a3ae",
+          "sha1": "f2f62f15f9db4cef6d79ca1aed9c6fcb75b2e0bd",
+          "md5": "c919f8cf35bd3c37e107be0d7042bf75"
+        }
+      ]
+    },
+    {
+      "name": "javadocElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "javadoc",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "querysentinel-1.0.0-javadoc.jar",
+          "url": "querysentinel-1.0.0-javadoc.jar",
+          "size": 157141,
+          "sha512": "c6f6da8a8cf1c3cec20fe64b78290f9dc26efcd618128fe9ff3be7c8cfd214fddb54f1d1452e3cd71ac74ebd374c218a01b5e877b76f9892bd950c9e04ebab25",
+          "sha256": "465d997a6d2d2123ac8663448986d2d582821aa94f915e338c5ab0f62c37f9ce",
+          "sha1": "ffffbe8244bc420e5d94eb17615084154cd62d12",
+          "md5": "c665bb38e43e67479be8eb2aabcb4307"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "querysentinel-1.0.0-sources.jar",
+          "url": "querysentinel-1.0.0-sources.jar",
+          "size": 12931,
+          "sha512": "3cd763cc5219eea6c7ecebd925611556bdd5f28fb83cb594bc69e3bd168d20a277707a262be25995a88c0632020e2240e4bf33628bbad48fa023481d0ab9c0dd",
+          "sha256": "283c7e46e502218523df425d6c18d0a7ab23b54570e185a4bfd4fa3eead12691",
+          "sha1": "4b5a8ffd2177d3de0aef45798f6fb576e4798606",
+          "md5": "03d3e56bf3531f4eb3028fc3bdfca53a"
+        }
+      ]
+    }
+  ]
+}

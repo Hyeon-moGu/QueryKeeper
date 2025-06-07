@@ -1,0 +1,71 @@
+# Java & Gradle
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+/build/
+/.gradle/
+/out/
+/bin/
+/target/
+/.idea/
+/*.iws
+/*.ipr
+/*.iml
+
+# Gradle Wrapper
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# IntelliJ & VSCode
+.vscode/
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+*.icloud
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Maven Repository
+.m2/
+.mvn/
+
+# Test
+/test-output/
+/reports/
+/coverage/
+/jacoco.exec
+
+# Log Files
+*.log
+
+# Generated JAR
+libs/
+querysentinel-*.jar
+demo-*.jar
+
+# OS Backup Files
+*~
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# Other
+*.orig
+*.rej
+*.patch
+.buildscan/
+
