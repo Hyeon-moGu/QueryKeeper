@@ -1,13 +1,13 @@
 # 🔭 QuerySentinel
 JPA 쿼리 실행 검증 & 성능 테스트 어노테이션
 
-**QuerySentinel**은 `Spring Boot` 기반 `JPA`, `Hibernate` 테스트 코드에서 실행되는 **SQL 쿼리 수**, **실행 시간**, **DB 접근 여부** 등을 어노테이션 기반으로 자동 검증하는 테스트 라이브러리입니다.
-외부 APM 또는 JDBC 프록시 종속성 없이 구축되었으며, 효율적인 저수준 쿼리 추적을 위해 핵심 JDBC 구성 요소(PreparedStatement, Connection 및 DataSource)를 직접 래핑합니다.
+**QuerySentinel**은 `Spring Boot` + `JPA` 테스트 코드에서 실행되는 SQL 쿼리 수, 실행 시간, DB 접근 여부 등을 어노테이션 기반으로 검증하는 테스트 전용 라이브러리입니다.
+외부 APM이나 JDBC 프록시 없이, 순수 Java 코드로 구현되었습니다. 핵심 JDBC 구성 요소(`PreparedStatement`, `Connection`, `DataSource`)를 직접 감싸 low-level에서 쿼리를 추적합니다.
 
-> ✅ 쿼리 성능 회귀를 테스트 단계에서 감지  
-> ✅ `@ExpectQuery`, `@ExpectNoDb`, `@ExpectTime` 같은 직관적인 어노테이션으로 구현  
-> ✅ `N+1 문제`, `불필요한 DB 호출`, `슬로우 쿼리`를 테스트 중 탐지
-> ✅ `PreparedStatement`, `Connection` 및 `DataSource`를 직접 래핑
+> ✅ 쿼리 성능 회귀를 테스트 단계에서 감지 <br>
+> ✅ `@ExpectQuery`, `@ExpectNoDb`, `@ExpectTime` 같은 직관적인 어노테이션으로 구현 <br>
+> ✅ `N+1 문제`, `불필요한 DB 호출`, `느린 쿼리`를 테스트 중 탐지 <br>
+> ✅ `PreparedStatement`, `Connection` 및 `DataSource`를 직접 래핑 <br>
 
 ---
 
@@ -23,6 +23,16 @@ JPA 쿼리 실행 검증 & 성능 테스트 어노테이션
 ---
 
 ## 2️⃣ 설치방법
+
+### 로깅 주의사항
+
+QuerySentinel은 로그 출력을 위해 SLF4J를 사용합니다.  
+Spring Boot를 사용하는 경우 별도 설정이 필요하지 않습니다 (`spring-boot-starter-logging`에 포함)
+Spring Boot가 아닌 환경에서는 다음 의존성을 추가:
+
+```groovy
+runtimeOnly 'ch.qos.logback:logback-classic:1.4.14'
+```
 
 #### A. 로컬 Maven에 배포 후 사용
 
@@ -78,24 +88,27 @@ class UserRepositoryTest {
 #### 테스트 출력 예시
 
 ```text
-[QuerySentinel] ExpectTime PASSED - Method testUserQueries took 178ms (expected <= 300ms)
+[QuerySentinel] ExpectTime ✅ PASSED - findAll_expect took 164ms (expected <= 300ms)
 
-[QuerySentinel] Query Expectation PASSED - testUserQueries()
+[QuerySentinel] ExpectQuery ✅ PASSED - findAll_expect()
 --------------------------------------------------------
-[SELECT] (1 ms)
+Total Queries: 3
+--------------------------------------------------------
+1. [SELECT] (1 ms)
 SQL     : select next value for users_seq
-Caller  : com.example.demo.UserRepositoryTest#saveUser:33
+Caller  : com.example.demo.UserRepositoryTest#saveUser:34
 --------------------------------------------------------
-[INSERT] (1 ms)
+2. [INSERT] (0 ms)
 SQL     : insert into users (email,name,id) values (?,?,?)
 Params  : {1=alice@example.com, 2=Alice, 3=1}
-Caller  : com.example.demo.UserRepositoryTest#saveUser:33
+Caller  : com.example.demo.UserRepositoryTest#saveUser:34
 --------------------------------------------------------
-[SELECT] (0 ms)
+3. [SELECT] (0 ms)
 SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
-Caller  : com.example.demo.UserRepositoryTest#loadUsers:37
+Caller  : com.example.demo.UserRepositoryTest#loadUsers:38
 --------------------------------------------------------
- Total Queries: 3
+
+[QuerySentinel] ExpectNoDb ❌ FAILED - 3 DB queries were executed in findAll_expect()
 ```
 
 ---

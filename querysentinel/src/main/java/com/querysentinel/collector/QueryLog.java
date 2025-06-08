@@ -14,14 +14,17 @@ public class QueryLog {
         this.durationMs = durationMs;
         this.caller = caller;
     }
-    
 
     public String getType() {
         String lower = sql.trim().toLowerCase();
-        if (lower.startsWith("select")) return "SELECT";
-        if (lower.startsWith("insert")) return "INSERT";
-        if (lower.startsWith("update")) return "UPDATE";
-        if (lower.startsWith("delete")) return "DELETE";
+        if (lower.startsWith("select"))
+            return "SELECT";
+        if (lower.startsWith("insert"))
+            return "INSERT";
+        if (lower.startsWith("update"))
+            return "UPDATE";
+        if (lower.startsWith("delete"))
+            return "DELETE";
         return "OTHER";
     }
 }

@@ -23,6 +23,6 @@ public abstract class AbstractDelegatingPreparedStatement implements PreparedSta
 
     @Override
     public void addBatch() throws SQLException {
-         delegate.addBatch();
+        delegate.addBatch();
     }
 }

@@ -2,7 +2,7 @@
 JPA Query Verification & Performance Testing Annotations
 
 **QuerySentinel** is an annotation-based library for validating **SQL query count**, **execution time**, and **database access** in `Spring Boot` + `JPA` test code.  
-It is built without any external APM or JDBC proxy dependencies — instead, it wraps core JDBC components (`PreparedStatement`, `Connection`, and `DataSource`) directly for efficient and low-level query tracking.
+It has no external APM or JDBC proxy dependencies. Instead, it wraps core JDBC components (`PreparedStatement`, `Connection`, and `DataSource`) directly for efficient and low-level query tracking.
 
 > ✅ Catch performance regressions during refactoring  
 > ✅ Intuitive annotations like `@ExpectQuery`, `@ExpectTime`, `@ExpectNoDb`  
@@ -26,6 +26,16 @@ It is built without any external APM or JDBC proxy dependencies — instead, it 
 
 ## 2️⃣ Installation
 
+### Logging Note
+
+QuerySentinel uses SLF4J for logging.  
+If you're using Spring Boot, no action is needed (Logback is included by default).  
+For non-Spring Boot environments, be sure to include a compatible SLF4J backend:
+
+```groovy
+runtimeOnly 'ch.qos.logback:logback-classic:1.4.14'
+```
+
 ### A. Publish to local Maven repository
 
 ```bash
@@ -44,7 +54,7 @@ dependencies {
 testImplementation files('libs/querysentinel-1.0.0.jar')
 ```
 
-### Optional: Test Logging Configuration for Better Output(build.gradle)
+### Optional: Enhanced test logging configuration (in build.gradle)
 ```groovy
 test {
     useJUnitPlatform()
@@ -80,25 +90,28 @@ class UserRepositoryTest {
 
 ### Test Output Example
 
-```
-[QuerySentinel] ExpectTime PASSED - Method testUserQueries took 178ms (expected <= 300ms)
+```text
+[QuerySentinel] ExpectTime ✅ PASSED - findAll_expect took 164ms (expected <= 300ms)
 
-[QuerySentinel] Query Expectation PASSED - testUserQueries()
+[QuerySentinel] ExpectQuery ✅ PASSED - findAll_expect()
 --------------------------------------------------------
-[SELECT] (1 ms)
+Total Queries: 3
+--------------------------------------------------------
+1. [SELECT] (1 ms)
 SQL     : select next value for users_seq
-Caller  : com.example.demo.UserRepositoryTest#saveUser:33
+Caller  : com.example.demo.UserRepositoryTest#saveUser:34
 --------------------------------------------------------
-[INSERT] (1 ms)
+2. [INSERT] (0 ms)
 SQL     : insert into users (email,name,id) values (?,?,?)
 Params  : {1=alice@example.com, 2=Alice, 3=1}
-Caller  : com.example.demo.UserRepositoryTest#saveUser:33
+Caller  : com.example.demo.UserRepositoryTest#saveUser:34
 --------------------------------------------------------
-[SELECT] (0 ms)
+3. [SELECT] (0 ms)
 SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
-Caller  : com.example.demo.UserRepositoryTest#loadUsers:37
+Caller  : com.example.demo.UserRepositoryTest#loadUsers:38
 --------------------------------------------------------
-✅ Total Queries: 3
+
+[QuerySentinel] ExpectNoDb ❌ FAILED - 3 DB queries were executed in findAll_expect()
 ```
 
 ---
@@ -110,8 +123,8 @@ Caller  : com.example.demo.UserRepositoryTest#loadUsers:37
 * Hibernate 6.3+
 * JUnit 5.9+
 
-> Note: This library assumes a Spring Boot + JPA environment.
-> You must include the following dependencies:
+> Note: This library is designed for Spring Boot + JPA environments.
+> Make sure the following dependencies are included in your project:
 ```groovy
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'

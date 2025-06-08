@@ -1,24 +1,26 @@
 package com.querysentinel.engine;
 
-import com.querysentinel.collector.QuerySentinelContext;
-
 import java.lang.reflect.Method;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.querysentinel.collector.QuerySentinelContext;
 
 public class NoDbAssertionEngine {
 
+    private static final Logger logger = LoggerFactory.getLogger(NoDbAssertionEngine.class);
+
     public static void assertNoDb(Method method) {
         long totalQueries = QuerySentinelContext.getLogs().size();
+        String methodName = method.getName();
 
         if (totalQueries > 0) {
-            System.err.printf(
-                "[QuerySentinel] ExpectNoDb FAILED - %d DB queries were executed in %s()%n",
-                totalQueries, method.getName()
-            );
+            logger.error("\n[QuerySentinel] ExpectNoDb ❌ FAILED - {} DB queries were executed in {}()", totalQueries,
+                    methodName);
             throw new AssertionError("Expected no DB access, but found " + totalQueries + " queries.");
         } else {
-            System.out.printf(
-                "[QuerySentinel] ExpectNoDb PASSED - No DB access in %s()%n", method.getName()
-            );
+            logger.info("\n[QuerySentinel] ExpectNoDb ✅ PASSED - No DB access in {}()", methodName);
         }
     }
 }

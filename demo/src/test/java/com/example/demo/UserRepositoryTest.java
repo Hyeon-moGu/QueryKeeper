@@ -1,15 +1,17 @@
 package com.example.demo;
 
-import com.querysentinel.annotation.EnableQuerySentinel;
-import com.querysentinel.annotation.ExpectQuery;
-import com.querysentinel.annotation.ExpectTime;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.querysentinel.annotation.EnableQuerySentinel;
+import com.querysentinel.annotation.ExpectNoDb;
+import com.querysentinel.annotation.ExpectQuery;
+import com.querysentinel.annotation.ExpectTime;
 
 @SpringBootTest
 @EnableQuerySentinel
@@ -21,6 +23,7 @@ class UserRepositoryTest {
     @Test
     @ExpectQuery(select = 2, insert = 1)
     @ExpectTime(300)
+    @ExpectNoDb
     void findAll_expect() {
         saveUser();
         List<User> users = loadUsers();

@@ -1,11 +1,12 @@
 package com.querysentinel.autoconfig;
 
-import com.querysentinel.collector.LoggingDataSource;
+import javax.sql.DataSource;
+
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.sql.DataSource;
+import com.querysentinel.collector.LoggingDataSource;
 
 @Configuration
 public class QuerySentinelAutoConfiguration {

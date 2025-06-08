@@ -1,5 +1,13 @@
 package com.querysentinel.junit;
 
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+
 import com.querysentinel.annotation.ExpectNoDb;
 import com.querysentinel.annotation.ExpectQuery;
 import com.querysentinel.annotation.ExpectTime;
@@ -8,11 +16,6 @@ import com.querysentinel.engine.NoDbAssertionEngine;
 import com.querysentinel.engine.QueryAssertionEngine;
 import com.querysentinel.engine.TimeAssertionEngine;
 import com.querysentinel.reporter.QueryReporter;
-import org.junit.jupiter.api.extension.*;
-
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
 
 public class QuerySentinelExtension implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
