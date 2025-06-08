@@ -24,7 +24,7 @@ class UserRepositoryTest {
     @ExpectQuery(select = 2, insert = 1)
     @ExpectTime(300)
     @ExpectNoDb
-    void findAll_expect() {
+    void testUser() {
         saveUser();
         List<User> users = loadUsers();
         assertThat(users).hasSize(1);

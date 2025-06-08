@@ -77,13 +77,21 @@ class UserRepositoryTest {
     UserRepository userRepository;
 
     @Test
-    @ExpectQuery(select = 1, insert = 1)
+    @ExpectQuery(select = 2, insert = 1)
     @ExpectTime(300)
     @ExpectNoDb
-    void testUserQueries() {
-        userRepository.save(new User("Alice", "alice@example.com"));
-        List<User> users = userRepository.findAll();
+    void testUser() {
+        saveUser();
+        List<User> users = loadUsers();
         assertThat(users).hasSize(1);
+    }
+
+    private void saveUser() {
+        userRepository.save(new User("Alice", "alice@example.com"));
+    }
+
+    private List<User> loadUsers() {
+        return userRepository.findAll();
     }
 }
 ```
@@ -91,9 +99,9 @@ class UserRepositoryTest {
 ### Test Output Example
 
 ```text
-[QuerySentinel] ExpectTime ✅ PASSED - findAll_expect took 164ms (expected <= 300ms)
+[QuerySentinel] ExpectTime ✅ PASSED - testUser took 164ms (expected <= 300ms)
 
-[QuerySentinel] ExpectQuery ✅ PASSED - findAll_expect()
+[QuerySentinel] ExpectQuery ✅ PASSED - testUser()
 --------------------------------------------------------
 Total Queries: 3
 --------------------------------------------------------
@@ -111,7 +119,7 @@ SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
 Caller  : com.example.demo.UserRepositoryTest#loadUsers:38
 --------------------------------------------------------
 
-[QuerySentinel] ExpectNoDb ❌ FAILED - 3 DB queries were executed in findAll_expect()
+[QuerySentinel] ExpectNoDb ❌ FAILED - 3 DB queries were executed in testUser()
 ```
 
 ---

@@ -13,6 +13,8 @@
 /*.iws
 /*.ipr
 /*.iml
+querysentinel/build
+demo/build
 
 # Gradle Wrapper
 .gradle/
