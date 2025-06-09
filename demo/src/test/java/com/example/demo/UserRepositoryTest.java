@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import com.querysentinel.annotation.EnableQuerySentinel;
 import com.querysentinel.annotation.ExpectNoDb;
+import com.querysentinel.annotation.ExpectNoTx;
 import com.querysentinel.annotation.ExpectQuery;
 import com.querysentinel.annotation.ExpectTime;
 
@@ -21,9 +22,10 @@ class UserRepositoryTest {
     private UserRepository userRepository;
 
     @Test
-    @ExpectQuery(select = 2, insert = 1)
-    @ExpectTime(300)
+    @ExpectQuery(select = 1, insert = 1)
     @ExpectNoDb
+    @ExpectTime(300)
+    @ExpectNoTx(strict = false)
     void testUser() {
         saveUser();
         List<User> users = loadUsers();

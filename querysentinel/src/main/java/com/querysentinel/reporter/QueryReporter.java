@@ -11,12 +11,18 @@ import com.querysentinel.collector.QuerySentinelContext;
 public class QueryReporter {
     private static final Logger logger = LoggerFactory.getLogger(QueryReporter.class);
 
-    public static void printReport(String testName) {
+    public static void printReport(String testName, boolean skipped) {
         List<QueryLog> logs = QuerySentinelContext.getLogs();
         StringBuilder sb = new StringBuilder();
         int num = 1;
 
-        sb.append("[QuerySentinel] ExpectQuery ✅ PASSED - ").append(testName).append("\n");
+        if (skipped) {
+            sb.append("[QuerySentinel] ExpectQuery ⚠️ SKIPPED - ").append(testName)
+                    .append(", No expectations set, logging queries only.").append("\n");
+        } else {
+            sb.append("[QuerySentinel] ExpectQuery ✅ PASSED - ").append(testName).append("\n");
+        }
+
         sb.append("--------------------------------------------------------\n");
         sb.append("Total Queries: ").append(logs.size()).append("\n");
         sb.append("--------------------------------------------------------\n");
@@ -35,4 +41,5 @@ public class QueryReporter {
 
         logger.info("\n{}\n", sb);
     }
+
 }

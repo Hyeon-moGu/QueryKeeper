@@ -12,6 +12,12 @@ public class TimeAssertionEngine {
     public static void assertExecutionTime(Method method, long duration, long expected) {
         String methodName = method.getName();
 
+        if (expected == 0) {
+            logger.warn("\n[QuerySentinel] ExpectTime ⚠️ SKIPPED - {}() took {}ms (no threshold set)",
+                    methodName, duration);
+            return;
+        }
+
         if (duration > expected) {
             logger.error("\n[QuerySentinel] ExpectTime ❌ FAILED - {} took {}ms (expected <= {}ms)", methodName,
                     duration, expected);

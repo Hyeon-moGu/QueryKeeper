@@ -1,13 +1,13 @@
 # 🔭 QuerySentinel
 JPA Query Verification & Performance Testing Annotations
 
-**QuerySentinel** is an annotation-based library for validating **SQL query count**, **execution time**, and **database access** in `Spring Boot` + `JPA` test code.  
-It has no external APM or JDBC proxy dependencies. Instead, it wraps core JDBC components (`PreparedStatement`, `Connection`, and `DataSource`) directly for efficient and low-level query tracking.
+**QuerySentinel** is an annotation-based library for verifying SQL behavior in `Spring Boot` + `JPA` tests.  
+It tracks **query count**, **execution time**, and **database access** without relying on external agents or JDBC proxies.
 
-> ✅ Catch performance regressions during refactoring  
-> ✅ Intuitive annotations like `@ExpectQuery`, `@ExpectTime`, `@ExpectNoDb`  
-> ✅ Detect `N+1 queries`, `unintended DB calls`, and `slow queries` during testing  
-> ✅ No external agents — just pure, lightweight instrumentation
+> ✅ Catch performance regressions during refactoring <br>
+> ✅ Intuitive annotations like `@ExpectQuery`, `@ExpectTime`, `@ExpectNoDb` , `@ExpectNoTx` <br>
+> ✅ Detect `N+1 queries`, `unintended DB calls`, and `slow queries` during testing  <br>
+> ✅ No external agents — just pure, lightweight instrumentation <br>
 
 🇰🇷 [Korean](./README.ko.md)
 
@@ -17,10 +17,11 @@ It has no external APM or JDBC proxy dependencies. Instead, it wraps core JDBC c
 
 | Annotation                         | Description                                                      |
 | ---------------------------------- | ---------------------------------------------------------------- |
-| `@EnableQuerySentinel`             | Enables all QuerySentinel functionality                          |
-| `@ExpectQuery(select=1, insert=1)` | Validates expected number of SELECT/INSERT/UPDATE/DELETE queries |
-| `@ExpectTime(300)`                 | Fails if test method exceeds 300ms execution time                |
-| `@ExpectNoDb`                      | Fails if any DB access occurs during test                        |
+| `@EnableQuerySentinel`             | Enables all QuerySentinel features                               |
+| `@ExpectQuery(select=1, insert=1)` | Asserts expected number of SQL queries                           |
+| `@ExpectTime(300)`                 | Fails if test method takes longer than 300ms                     |
+| `@ExpectNoDb`                      | Fails if any database query is executed                          |
+| `@ExpectNoTx(strict = true)`       | Fails if any transaction is active (including read-only)         |
 
 ---
 
@@ -66,7 +67,7 @@ test {
 }
 ```
 
-### Test Code Example
+### Code Example
 
 ```java
 @SpringBootTest
@@ -74,12 +75,13 @@ test {
 class UserRepositoryTest {
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Test
-    @ExpectQuery(select = 2, insert = 1)
+    @ExpectQuery(select = 1, insert = 1)  // Expected SELECT count is set to 1 to demonstrate a failure (actual: 2)
+    @ExpectNoDb                           // Will fail since database access is performed in this test
     @ExpectTime(300)
-    @ExpectNoDb
+    @ExpectNoTx(strict = false)
     void testUser() {
         saveUser();
         List<User> users = loadUsers();
@@ -96,27 +98,30 @@ class UserRepositoryTest {
 }
 ```
 
-### Test Output Example
+### Output Example
 
 ```text
-[QuerySentinel] ExpectTime ✅ PASSED - testUser took 164ms (expected <= 300ms)
-
-[QuerySentinel] ExpectQuery ✅ PASSED - testUser()
+[QuerySentinel] ExpectNoTx ✅ PASSED - No transaction in testUser()
+[QuerySentinel] ExpectTime ✅ PASSED - testUser took 262ms (expected <= 300ms)
+[QuerySentinel] ExpectQuery ❌ FAILED
+--------------------------------------------------------
+Expected - SELECT: 1, INSERT: 1
+Actual   - SELECT: 2, INSERT: 1
 --------------------------------------------------------
 Total Queries: 3
 --------------------------------------------------------
-1. [SELECT] (1 ms)
+1. [SELECT] (2 ms)
 SQL     : select next value for users_seq
-Caller  : com.example.demo.UserRepositoryTest#saveUser:34
+Caller  : com.example.demo.UserRepositoryTest#saveUser:36
 --------------------------------------------------------
-2. [INSERT] (0 ms)
+2. [INSERT] (1 ms)
 SQL     : insert into users (email,name,id) values (?,?,?)
 Params  : {1=alice@example.com, 2=Alice, 3=1}
-Caller  : com.example.demo.UserRepositoryTest#saveUser:34
+Caller  : com.example.demo.UserRepositoryTest#saveUser:36
 --------------------------------------------------------
 3. [SELECT] (0 ms)
 SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
-Caller  : com.example.demo.UserRepositoryTest#loadUsers:38
+Caller  : com.example.demo.UserRepositoryTest#loadUsers:40
 --------------------------------------------------------
 
 [QuerySentinel] ExpectNoDb ❌ FAILED - 3 DB queries were executed in testUser()
@@ -145,7 +150,6 @@ dependencies {
 
 <details>
 <summary>Click to expand</summary>
-
 spring boot jpa query count  <br>
 hibernate query assertion  <br>
 junit performance test for SQL  <br>
@@ -155,6 +159,4 @@ junit measure sql execution time  <br>
 test if service uses cache instead of db  <br>
 custom datasource jdbc tracking  <br>
 jdbc proxy alternative for JPA testing  <br>
-
 </details>
-
