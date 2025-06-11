@@ -15,14 +15,64 @@ It tracks **query count**, **execution time**, and **database access** without r
 
 ## 1️⃣ Features
 
-| Annotation                         | Description                                                      |
-| ---------------------------------- | ---------------------------------------------------------------- |
-| `@EnableQuerySentinel`             | Enables all QuerySentinel features                               |
-| `@ExpectQuery(select=1, insert=1)` | Asserts expected number of SQL queries                           |
-| `@ExpectTime(300)`                 | Fails if test method takes longer than 300ms                     |
-| `@ExpectNoDb`                      | Fails if any database query is executed                          |
-| `@ExpectNoTx(strict = true)`       | Fails if any transaction is active (including read-only)         |
-| `@ExpectLazyLoad(entity = "User")`   | Fails if unexpected lazy loading or LazyInitializationException occurs      |
+| Annotation            | Description                                                                 |
+|----------------------|-----------------------------------------------------------------------------|
+| `@EnableQuerySentinel` | Activates all QuerySentinel test assertions                                |
+| `@ExpectQuery`         | Tracks and verifies the number of executed SQL queries during the test     |
+| `@ExpectLazyLoad`      | Detects unexpected lazy loading and captures LazyInitializationExceptions  |
+| `@ExpectTime`          | Asserts that the test completes within a specified time limit              |
+| `@ExpectNoDb`          | Fails if any database interaction (e.g., query, update) is detected        |
+| `@ExpectNoTx`          | Ensures the test runs outside of any transactional context                 |
+
+## Detailed Usage 
+
+### `@ExpectQuery`
+Logs and optionally verifies SQL queries executed during the test.
+- **Parameters:**
+  - `select` *(optional, default: -1)* — Expected number of SELECT queries
+  - `insert` *(optional, default: -1)* — Expected number of INSERT queries
+  - `update` *(optional, default: -1)* — Expected number of UPDATE queries
+  - `delete` *(optional, default: -1)* — Expected number of DELETE queries
+- **How it works:**  
+By default, this annotation logs all executed SQL queries along with their parameters and execution times.
+If one or more expected counts (select, insert, etc.) are specified (i.e., ≥ 0), the test will fail if the actual counts don't match. <br>
+
+### `@ExpectLazyLoad`
+Detects lazy-loading behavior and optionally fails on exceptions.
+- **Parameters:**
+  - `entity` *(optional, default: "")* — Specific entity class name to monitor (e.g. `"User"`). **If empty, all are monitored.**
+  - `maxCount` *(optional, default: 0)* — Maximum allowed number of lazy loads
+  - `includeException` *(optional, default: true)* — Whether to fail on `LazyInitializationException`
+
+- **How it works:**  
+  Tracks when a lazily loaded field is accessed. If an exception occurs or the number of lazy loads exceeds `maxCount`, the test fails. Helps enforce explicit fetching and avoid runtime errors. The entity parameter matches the simple class name. <br>
+
+### `@ExpectTime`
+Ensures the test completes within the given time.
+
+- **Parameters:**
+  - `value` *(required)* — Maximum allowed execution time in milliseconds
+
+- **How it works:**  
+ Measures total execution time of the test method, including all setup and database operations. Useful for catching performance regressions. <br>
+
+### `@ExpectNoDb`
+
+Asserts that no database queries are executed.
+
+- **Parameters:** *(none)*
+
+- **How it works:**  
+  If any query (SELECT, INSERT, etc.) is executed, the test fails. Helpful for validating pure logic or cache-layer tests. <br>
+
+### `@ExpectNoTx`
+Ensures the test runs outside of a transaction.
+
+- **Parameters:**
+  - `strict` *(optional, default: true)* — If `true`, read-only transactions are also disallowed
+
+- **How it works:**  
+  Detects if a transaction is active during test execution. With `strict=true`, even `@Transactional(readOnly = true)` will cause the test to fail. <br>
 ---
 
 ## 2️⃣ Installation
