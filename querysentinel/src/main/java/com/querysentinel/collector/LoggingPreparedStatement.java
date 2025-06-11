@@ -54,7 +54,7 @@ public class LoggingPreparedStatement extends AbstractDelegatingPreparedStatemen
         long end = System.nanoTime();
         long durationMs = TimeUnit.NANOSECONDS.toMillis(end - start);
         String caller = findCaller();
-        QuerySentinelContext.log(new QueryLog(sql, parameters, durationMs, caller));
+        QuerySentinelContext.getCurrent().log(new QueryLog(sql, parameters, durationMs, caller));
         return result;
     }
 
@@ -64,7 +64,7 @@ public class LoggingPreparedStatement extends AbstractDelegatingPreparedStatemen
         ResultSet rs = delegate.executeQuery();
         long end = System.currentTimeMillis();
         String caller = findCaller();
-        QuerySentinelContext.log(new QueryLog(sql, parameters, end - start, caller));
+        QuerySentinelContext.getCurrent().log(new QueryLog(sql, parameters, end - start, caller));
         return rs;
     }
 
@@ -74,7 +74,7 @@ public class LoggingPreparedStatement extends AbstractDelegatingPreparedStatemen
         int result = delegate.executeUpdate();
         long end = System.currentTimeMillis();
         String caller = findCaller();
-        QuerySentinelContext.log(new QueryLog(sql, parameters, end - start, caller));
+        QuerySentinelContext.getCurrent().log(new QueryLog(sql, parameters, end - start, caller));
         return result;
     }
 

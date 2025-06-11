@@ -7,6 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 import com.querysentinel.junit.QuerySentinelExtension;
 
@@ -36,5 +37,6 @@ import com.querysentinel.junit.QuerySentinelExtension;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @ExtendWith(QuerySentinelExtension.class)
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 public @interface EnableQuerySentinel {
 }

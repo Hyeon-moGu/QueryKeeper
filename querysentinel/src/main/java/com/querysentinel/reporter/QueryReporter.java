@@ -12,7 +12,7 @@ public class QueryReporter {
     private static final Logger logger = LoggerFactory.getLogger(QueryReporter.class);
 
     public static void printReport(String testName, boolean skipped) {
-        List<QueryLog> logs = QuerySentinelContext.getLogs();
+        List<QueryLog> logs = QuerySentinelContext.getCurrent().getLogs();
         StringBuilder sb = new StringBuilder();
         int num = 1;
 

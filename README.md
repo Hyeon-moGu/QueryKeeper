@@ -22,7 +22,7 @@ It tracks **query count**, **execution time**, and **database access** without r
 | `@ExpectTime(300)`                 | Fails if test method takes longer than 300ms                     |
 | `@ExpectNoDb`                      | Fails if any database query is executed                          |
 | `@ExpectNoTx(strict = true)`       | Fails if any transaction is active (including read-only)         |
-
+| `@ExpectLazyLoad(entity = "User")`   | Fails if unexpected lazy loading or LazyInitializationException occurs      |
 ---
 
 ## 2️⃣ Installation
@@ -132,8 +132,8 @@ Caller  : com.example.demo.UserRepositoryTest#loadUsers:40
 ## 3️⃣ Recommended Environment
 
 * Java 17+
-* Spring Boot 3.2+
-* Hibernate 6.3+
+* Spring Boot 2.7.x ~ Spring Boot 3.2+
+* Hibernate 5.6.x ~ Hibernate 6.3+
 * JUnit 5.9+
 
 > Note: This library is designed for Spring Boot + JPA environments.

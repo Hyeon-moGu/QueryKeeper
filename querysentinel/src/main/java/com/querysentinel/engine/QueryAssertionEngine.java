@@ -17,7 +17,7 @@ public class QueryAssertionEngine {
 
     public static boolean assertQueries(Method method, ExpectQuery expectation) {
         String methodName = method.getName();
-        List<QueryLog> logs = QuerySentinelContext.getLogs();
+        List<QueryLog> logs = QuerySentinelContext.getCurrent().getLogs();
         StringBuilder sb = new StringBuilder();
 
         long select = logs.stream().filter(l -> l.getType().equals("SELECT")).count();
@@ -89,16 +89,20 @@ public class QueryAssertionEngine {
             logger.error(sb.toString());
 
             if (expectation.select() >= 0 && select != expectation.select()) {
-                throw new AssertionError("SELECT mismatch: expected=" + expectation.select() + ", actual=" + select);
+                throw new AssertionError(
+                        "\n[QuerySentinel] SELECT mismatch: expected=" + expectation.select() + ", actual=" + select);
             }
             if (expectation.insert() >= 0 && insert != expectation.insert()) {
-                throw new AssertionError("INSERT mismatch: expected=" + expectation.insert() + ", actual=" + insert);
+                throw new AssertionError(
+                        "\n[QuerySentinel] INSERT mismatch: expected=" + expectation.insert() + ", actual=" + insert);
             }
             if (expectation.update() >= 0 && update != expectation.update()) {
-                throw new AssertionError("UPDATE mismatch: expected=" + expectation.update() + ", actual=" + update);
+                throw new AssertionError(
+                        "\n[QuerySentinel] UPDATE mismatch: expected=" + expectation.update() + ", actual=" + update);
             }
             if (expectation.delete() >= 0 && delete != expectation.delete()) {
-                throw new AssertionError("DELETE mismatch: expected=" + expectation.delete() + ", actual=" + delete);
+                throw new AssertionError(
+                        "\n[QuerySentinel] DELETE mismatch: expected=" + expectation.delete() + ", actual=" + delete);
             }
         }
         QueryReporter.printReport(methodName, false);

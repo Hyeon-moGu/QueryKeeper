@@ -12,7 +12,7 @@ public class NoDbAssertionEngine {
     private static final Logger logger = LoggerFactory.getLogger(NoDbAssertionEngine.class);
 
     public static void assertNoDb(Method method) {
-        long totalQueries = QuerySentinelContext.getLogs().size();
+        long totalQueries = QuerySentinelContext.getCurrent().getLogs().size();
         String methodName = method.getName();
 
         if (totalQueries > 0) {
