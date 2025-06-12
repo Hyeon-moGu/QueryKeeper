@@ -1,19 +1,25 @@
 package com.example.demo;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.querysentinel.annotation.EnableQuerySentinel;
-import com.querysentinel.annotation.ExpectLazyLoad;
-import com.querysentinel.annotation.ExpectNoTx;
-import com.querysentinel.annotation.ExpectQuery;
-import com.querysentinel.annotation.ExpectTime;
+import com.querykeeper.annotation.EnableQueryKeeper;
+import com.querykeeper.annotation.ExpectLazyLoad;
+import com.querykeeper.annotation.ExpectNoDb;
+import com.querykeeper.annotation.ExpectNoTx;
+import com.querykeeper.annotation.ExpectQuery;
+import com.querykeeper.annotation.ExpectTime;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 @SpringBootTest
-@EnableQuerySentinel
+@EnableQueryKeeper
 class UserRepositoryTest {
 
     @Autowired
@@ -22,32 +28,34 @@ class UserRepositoryTest {
     @Autowired
     private UserService userService;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Test
     @ExpectQuery(select = 1, insert = 1)
-    @ExpectTime(300)
+    @ExpectTime(500)
     @ExpectNoTx(strict = false)
-    void testQueryTimeNoTx() {
-
+    @ExpectNoDb
+    void testCombinedAssertions() {
         User user = new User("Alice", "alice@example.com");
         user.addRole(new Role("ADMIN"));
+        user.addRole(new Role("USER"));
         userRepository.save(user);
+        userRepository.findAll();
 
+        entityManager.clear();
         List<User> users = userRepository.findAll();
+        users.get(0).getRoles().size();
+
+        int sum = 0;
+        for (int i = 0; i < 1000; i++)
+            sum += i;
+        assertThat(sum).isGreaterThan(0);
     }
 
     @Test
-    @ExpectLazyLoad
+    @ExpectLazyLoad(maxCount = 0)
     void testLazyLoad() {
         userService.triggerLazyException();
     }
-
-    @Test
-    @ExpectLazyLoad
-    void testLazyLoad_pass() {
-        List<User> users = userRepository.findAllWithRoles();
-        for (User u : users) {
-            System.out.println("Roles: " + u.getRoles().size());
-        }
-    }
-
 }

@@ -17,7 +17,7 @@ dependencies {
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.2'
     implementation 'org.mybatis:mybatis:3.5.15'
     runtimeOnly 'com.h2database:h2'
-    testImplementation project(':querysentinel')
+    testImplementation project(':querykeeper')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

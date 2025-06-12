@@ -13,7 +13,7 @@
 /*.iws
 /*.ipr
 /*.iml
-querysentinel/build
+querykeeper/build
 demo/build
 
 # Gradle Wrapper
@@ -55,7 +55,7 @@ $RECYCLE.BIN/
 
 # Generated JAR
 libs/
-querysentinel-*.jar
+querykeeper-*.jar
 demo-*.jar
 
 # OS Backup Files

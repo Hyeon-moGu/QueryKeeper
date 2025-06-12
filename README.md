@@ -1,13 +1,14 @@
-# 🔭 QuerySentinel
-JPA Query Verification & Performance Testing Annotations
+# 🌱 QueryKeeper
+**SQL Query Monitoring for JPA Tests (Annotation-driven, Lightweight)**
 
-**QuerySentinel** is an annotation-based library for verifying SQL behavior in `Spring Boot` + `JPA` tests.  
-It tracks **query count**, **execution time**, and **database access** without relying on external agents or JDBC proxies.
+QueryKeeper is a lightweight testing utility for verifying SQL activity in `Spring Boot` + `JPA` projects.  
+It uses intuitive annotations to monitor **query count**, **execution time**, and **unintended DB access**,
+Without relying on external agents or JDBC proxies.
 
 > ✅ Catch performance regressions during refactoring <br>
-> ✅ Intuitive annotations like `@ExpectQuery`, `@ExpectTime`, `@ExpectNoDb` , `@ExpectNoTx` <br>
-> ✅ Detect `N+1 queries`, `unintended DB calls`, and `slow queries` during testing  <br>
-> ✅ No external agents — just pure, lightweight instrumentation <br>
+> ✅ Use annotations like `@ExpectQuery`, `@ExpectLazyLoad`, `@ExpectTime` <br>
+> ✅ Detect N+1 queries, unexpected lazy loads, and slow queries during test execution <br>
+> ✅ No agents, no proxies <br>
 
 🇰🇷 [Korean](./README.ko.md)
 
@@ -17,7 +18,7 @@ It tracks **query count**, **execution time**, and **database access** without r
 
 | Annotation            | Description                                                                 |
 |----------------------|-----------------------------------------------------------------------------|
-| `@EnableQuerySentinel` | Activates all QuerySentinel test assertions                                |
+| `@EnableQueryKeeper` | Activates all QueryKeeper test assertions                                |
 | `@ExpectQuery`         | Tracks and verifies the number of executed SQL queries during the test     |
 | `@ExpectLazyLoad`      | Detects unexpected lazy loading and captures LazyInitializationExceptions  |
 | `@ExpectTime`          | Asserts that the test completes within a specified time limit              |
@@ -36,16 +37,22 @@ Logs and optionally verifies SQL queries executed during the test.
 - **How it works:**  
 By default, this annotation logs all executed SQL queries along with their parameters and execution times.
 If one or more expected counts (select, insert, etc.) are specified (i.e., ≥ 0), the test will fail if the actual counts don't match. <br>
+> All SQL queries including `SELECT NEXT VALUE FOR` (e.g. for sequences) are counted.  <br>
 
 ### `@ExpectLazyLoad`
-Detects lazy-loading behavior and optionally fails on exceptions.
+Monitors lazy-loading behavior and optionally fails if unexpected access or exceptions occur.
 - **Parameters:**
-  - `entity` *(optional, default: "")* — Specific entity class name to monitor (e.g. `"User"`). **If empty, all are monitored.**
-  - `maxCount` *(optional, default: 0)* — Maximum allowed number of lazy loads
-  - `includeException` *(optional, default: true)* — Whether to fail on `LazyInitializationException`
+  - `entity` *(optional, default: "")* — Specific entity class name to monitor (e.g. `"User"`). If omitted, all entities are included.
+  - `maxCount` *(optional, default: 0)* — Maximum allowed number of lazy loads during the test
+  - `includeException` *(optional, default: true)* — Whether to fail the test when a `LazyInitializationException` is detected.
 
 - **How it works:**  
-  Tracks when a lazily loaded field is accessed. If an exception occurs or the number of lazy loads exceeds `maxCount`, the test fails. Helps enforce explicit fetching and avoid runtime errors. The entity parameter matches the simple class name. <br>
+This annotation detects when JPA entities lazily load related data at runtime. If the test accesses an uninitialized proxy or triggers a `LazyInitializationException`, it can be recorded and validated.
+It observes method executions and captures lazy-loading activity without requiring any changes to your application code.<br>
+Use this to catch unintended lazy loads and ensure that your entity relationships are explicitly fetched when needed. <br>
+> ⚠️ Lazy-loading is tracked via AOP. <br>
+> Make sure the lazy field access occurs inside a Spring-managed bean (e.g., a `@Service` method).  
+> Direct access from within the test method may not be detected.
 
 ### `@ExpectTime`
 Ensures the test completes within the given time.
@@ -79,7 +86,7 @@ Ensures the test runs outside of a transaction.
 
 ### Logging Note
 
-QuerySentinel uses SLF4J for logging.  
+QueryKeeper uses SLF4J for logging.  
 If you're using Spring Boot, no action is needed (Logback is included by default).  
 For non-Spring Boot environments, be sure to include a compatible SLF4J backend:
 
@@ -95,14 +102,14 @@ make publish
 
 ```groovy
 dependencies {
-    testImplementation 'com.querysentinel:querysentinel:1.0.0'
+    testImplementation 'com.querykeeper:querykeeper:1.0.0'
 }
 ```
 
 ### B. Use standalone JAR
 
 ```groovy
-testImplementation files('libs/querysentinel-1.0.0.jar')
+testImplementation files('libs/querykeeper-1.0.0.jar')
 ```
 
 ### Optional: Enhanced test logging configuration (in build.gradle)
@@ -119,62 +126,93 @@ test {
 
 ### Code Example
 
+> **Note**: This example intentionally triggers some annotation failures to showcase QueryKeeper’s detection features
+
 ```java
-@SpringBootTest
-@EnableQuerySentinel
-class UserRepositoryTest {
+@Test
+@ExpectQuery(select = 1, insert = 1) // ❌ fail
+@ExpectTime(500)                     // ✅ pass
+@ExpectNoTx(strict = false)          // ✅ pass
+@ExpectNoDb                          // ❌ fail
+void testCombinedAssertions() {
+    User user = new User("Alice", "alice@example.com");
+    user.addRole(new Role("ADMIN"));
+    user.addRole(new Role("USER"));
+    userRepository.save(user);
+    userRepository.findAll();
 
-    @Autowired
-    private UserRepository userRepository;
+    entityManager.clear();
+    List<User> users = userRepository.findAll();
+    users.get(0).getRoles().size();
 
-    @Test
-    @ExpectQuery(select = 1, insert = 1)  // Expected SELECT count is set to 1 to demonstrate a failure (actual: 2)
-    @ExpectNoDb                           // Will fail since database access is performed in this test
-    @ExpectTime(300)
-    @ExpectNoTx(strict = false)
-    void testUser() {
-        saveUser();
-        List<User> users = loadUsers();
-        assertThat(users).hasSize(1);
-    }
+    int sum = 0;
+    for (int i = 0; i < 1000; i++)
+        sum += i;
+    assertThat(sum).isGreaterThan(0);
+}
 
-    private void saveUser() {
-        userRepository.save(new User("Alice", "alice@example.com"));
-    }
-
-    private List<User> loadUsers() {
-        return userRepository.findAll();
-    }
+@Test
+@ExpectLazyLoad(maxCount = 0)        // ❌ fail
+void testLazyLoad() {
+    userService.triggerLazyException();
 }
 ```
 
 ### Output Example
 
-```text
-[QuerySentinel] ExpectNoTx ✅ PASSED - No transaction in testUser()
-[QuerySentinel] ExpectTime ✅ PASSED - testUser took 262ms (expected <= 300ms)
-[QuerySentinel] ExpectQuery ❌ FAILED
---------------------------------------------------------
-Expected - SELECT: 1, INSERT: 1
-Actual   - SELECT: 2, INSERT: 1
---------------------------------------------------------
-Total Queries: 3
---------------------------------------------------------
-1. [SELECT] (2 ms)
-SQL     : select next value for users_seq
-Caller  : com.example.demo.UserRepositoryTest#saveUser:36
---------------------------------------------------------
-2. [INSERT] (1 ms)
-SQL     : insert into users (email,name,id) values (?,?,?)
-Params  : {1=alice@example.com, 2=Alice, 3=1}
-Caller  : com.example.demo.UserRepositoryTest#saveUser:36
---------------------------------------------------------
-3. [SELECT] (0 ms)
-SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
-Caller  : com.example.demo.UserRepositoryTest#loadUsers:40
---------------------------------------------------------
+> **Note**: Log format is simplified for clarity. In actual tests, timestamps and class names will appear in SLF4J format.
 
-[QuerySentinel] ExpectNoDb ❌ FAILED - 3 DB queries were executed in testUser()
+```text
+UserRepositoryTest > testCombinedAssertions() STANDARD_OUT
+    [QueryKeeper] ▶ ExpectNoTx ✓ PASSED - No transaction in testCombinedAssertions()
+    [QueryKeeper] ▶ ExpectTime ✓ PASSED - testCombinedAssertions took 10ms (expected <= 500ms)
+    [QueryKeeper] ▶ ExpectQuery X FAILED
+    --------------------------------------------------------
+    Expected - (SELECT: 1, INSERT: 1), Actual - (SELECT: 4, INSERT: 3)
+    --------------------------------------------------------
+     Total Queries: 7
+    --------------------------------------------------------
+    1. [SELECT] (0 ms)
+    SQL     : select next value for users_seq
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
+    --------------------------------------------------------
+    2. [SELECT] (0 ms)
+    SQL     : select next value for roles_seq
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
+    --------------------------------------------------------
+    3. [INSERT] (1 ms)
+    SQL     : insert into users (email,name,id) values (?,?,?)
+    Params  : {1=alice@example.com, 2=Alice, 3=2}
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
+    --------------------------------------------------------
+    4. [INSERT] (0 ms)
+    SQL     : insert into roles (name,user_id,id) values (?,?,?)
+    Params  : {1=ADMIN, 2=2, 3=2}
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
+    --------------------------------------------------------
+    5. [INSERT] (1 ms)
+    SQL     : insert into roles (name,user_id,id) values (?,?,?)
+    Params  : {1=USER, 2=2, 3=3}
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
+    --------------------------------------------------------
+    6. [SELECT] (1 ms)
+    SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:44
+    --------------------------------------------------------
+    7. [SELECT] (0 ms)
+    SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:47
+    --------------------------------------------------------
+
+    [QueryKeeper] ▶ ExpectNoDb X FAILED - 7 DB queries were executed in testCombinedAssertions()
+    [QueryKeeper] ▶ testCombinedAssertions failed with 2 assertion(s)
+    [QueryKeeper] ▶ SELECT mismatch: expected=1, actual=4
+    [QueryKeeper] ▶ Expected no DB access, but found 7 queries
+
+UserRepositoryTest > testLazyLoad() STANDARD_OUT
+    [QueryKeeper] ▶ LazyLoadException (!) DETECTED - Entity: com.example.demo.User, Field: roles
+    [QueryKeeper] ▶ testLazyLoad failed with 1 assertion(s)
+    [QueryKeeper] ▶ ExpectLazyLoad X FAILED - Entity: Role, Expected Max: 0, Actual: 0, Exception: true
 ```
 
 ---
@@ -192,14 +230,14 @@ Caller  : com.example.demo.UserRepositoryTest#loadUsers:40
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'com.querysentinel:querysentinel:1.0.0'
+    testImplementation 'com.querykeeper:querykeeper:1.0.0'
 }
 ```
 
 ---
 
 <details>
-<summary>Click to expand</summary>
+<summary>SEO</summary>
 spring boot jpa query count  <br>
 hibernate query assertion  <br>
 junit performance test for SQL  <br>
@@ -209,4 +247,8 @@ junit measure sql execution time  <br>
 test if service uses cache instead of db  <br>
 custom datasource jdbc tracking  <br>
 jdbc proxy alternative for JPA testing  <br>
+jpa query count assertion  <br>
+jpa lazyinitializationexception unit test  <br>
+spring boot test assert no sql query  <br>
+jpa fetch join verification test  <br>
 </details>
