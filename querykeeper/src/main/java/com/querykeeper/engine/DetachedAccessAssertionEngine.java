@@ -22,12 +22,13 @@ public class DetachedAccessAssertionEngine {
 
         for (String entity : entities) {
             DetachedAccessInfo info = ctx.getDetachedAccessInfo(entity);
-            if (info == null) continue;
+            if (info == null)
+                continue;
 
             StringBuilder msg = new StringBuilder();
             msg.append("[QueryKeeper] ▶ ExpectDetachedAccess X FAILED")
-               .append(" - Entity: ").append(info.entity)
-               .append("\n  • Field: ").append(info.field);
+                    .append(" - Entity: ").append(info.entity)
+                    .append("\n  • Field: ").append(info.field);
 
             if (info.fullPath != null)
                 msg.append("\n  • Access Path: ").append(info.fullPath);

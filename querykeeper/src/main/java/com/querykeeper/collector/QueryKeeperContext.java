@@ -1,15 +1,18 @@
 package com.querykeeper.collector;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class QueryKeeperContext {
 
     private static final ThreadLocal<QueryKeeperContext> CURRENT = ThreadLocal.withInitial(QueryKeeperContext::new);
     private static final ThreadLocal<List<QueryLog>> QUERY_LOGS = ThreadLocal.withInitial(ArrayList::new);
+    private final Map<String, Integer> queryFingerprintCount = new HashMap<>();
 
     private final Map<String, DetachedAccessInfo> detachedAccessMap = new ConcurrentHashMap<>();
 
@@ -24,10 +27,19 @@ public class QueryKeeperContext {
 
     public void log(QueryLog log) {
         QUERY_LOGS.get().add(log);
+
+        String fp = log.fingerprint();
+        queryFingerprintCount.merge(fp, 1, Integer::sum);
     }
 
     public List<QueryLog> getLogs() {
         return QUERY_LOGS.get();
+    }
+
+    public Map<String, Integer> getDuplicateQueryFingerprints() {
+        return queryFingerprintCount.entrySet().stream()
+                .filter(e -> e.getValue() > 1)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public void markDetachedAccess(String entityName, String fieldName, String rootEntityName, String fullPath) {

@@ -63,8 +63,7 @@ public class DetachedAccessExceptionCatcher {
                         entityName,
                         fieldName,
                         rootEntity,
-                        fullPath
-                );
+                        fullPath);
 
             }
         } catch (Exception e) {

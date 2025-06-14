@@ -4,8 +4,9 @@
 **QueryKeeper**는 `Spring Boot` + `JPA` 테스트 코드에서 실행되는 SQL 쿼리 수, 실행 시간, DB 접근 여부 등을 어노테이션 기반으로 검증하는 테스트 전용 라이브러리입니다.
 외부 APM이나 JDBC 프록시 없이, 순수 Java 코드로 구현되었습니다. 핵심 JDBC 구성 요소(`PreparedStatement`, `Connection`, `DataSource`)를 직접 감싸 낮은 수준에서 쿼리를 추적합니다.
 
+> ✅ 별도 설정 없이 바로 사용 가능. 테스트 클래스에 `@EnableQueryKeeper` 만 추가 <br>
 > ✅ 쿼리 성능 회귀를 테스트 단계에서 감지 <br>
-> ✅ `@ExpectQuery`, `@ExpectDetachedAccess`, `@ExpectTime`, `@ExpectNoTx` 같은 직관적인 어노테이션으로 구현 <br>
+> ✅ `@ExpectQuery`, `@ExpectDetachedAccess`, `@ExpectTime`, `@ExpectDuplicateQuery` 같은 직관적인 어노테이션으로 구현 <br>
 > ✅ `N+1 문제`, `불필요한 DB 호출`, `느린 쿼리`를 테스트 중 탐지 <br>
 > ✅ `PreparedStatement`, `Connection` 및 `DataSource`를 직접 래핑 <br>
 
@@ -13,14 +14,15 @@
 
 ## 1️⃣ 기능 소개
 
-| 어노테이션 | 설명 |
-|-----------------------|------------------------------------------------------------------------------|
-| `@EnableQueryKeeper`      | 모든 QueryKeeper 기능을 활성화                                                |
-| `@ExpectQuery`            | 테스트 중 실시 수행된 추적의 개수를 로깅 및 검사                                     |
-| `@ExpectDetachedAccess`   | 트랜잭션이 종료된 후 LAZY 필드에 접근하여 발생하는 `LazyInitializationException`를 감지|
-| `@ExpectTime`             | 테스트 실행 시간 제한 (ms)                                                      |
-| `@ExpectNoDb`             | 테스트 중 DB 접근이 없어야 통과                                                   |
-| `@ExpectNoTx`             | 테스트 중 트랜잭션이 활성화되어 있으면 실패 (strict = true일 경우, 읽기 전용도 실패)        |
+| 어노테이션                   | 설명                                                                          |
+|---------------------------|------------------------------------------------------------------------------|
+| `@EnableQueryKeeper`      | 모든 QueryKeeper 기능을 활성화                                                   |
+| `@ExpectQuery`            | 테스트 중 실시 수행된 추적의 개수를 로깅 및 검사                                        |
+| `@ExpectDuplicateQuery`   | 동일한 SQL 쿼리(파라미터 포함)가 반복 실행될 경우 테스트를 실패 처리                        |
+| `@ExpectDetachedAccess`   | 트랜잭션이 종료된 후 LAZY 필드에 접근하여 발생하는 `LazyInitializationException`를 감지   |
+| `@ExpectTime`             | 테스트 실행 시간 제한 (ms)                                                        |
+| `@ExpectNoDb`             | 테스트 중 DB 접근이 없어야 통과                                                     |
+| `@ExpectNoTx`             | 테스트 중 트랜잭션이 활성화되어 있으면 실패 (strict = true일 경우, 읽기 전용도 실패)          |
 
 ## 어노테이션별 상세 설명
 
@@ -38,6 +40,20 @@
 * **동작 방식:**
   별도의 값을 지정하지 않으면 쿼리 로그만 출력됩니다. 하나 이상의 값이 0 이상으로 지정된 경우, 실제 쿼리 수가 기대치와 다르면 테스트가 실패합니다.
   `SELECT NEXT VALUE FOR`와 같은 시퀀스 관련 쿼리도 SELECT로 계산됩니다.
+
+### `@ExpectDuplicateQuery`
+
+동일한 SQL 쿼리(파라미터 포함)가 여러 번 실행될 경우 테스트를 실패 처리합니다.
+
+- **파라미터:**
+  - `max` *(선택, 기본값: 0)* — 허용되는 중복 쿼리의 최대 개수
+
+- **작동 방식:**  
+  테스트 실행 중 발생한 모든 SQL 쿼리와 그 파라미터를 추적하여,  
+  동일한 쿼리(문자열 및 파라미터 조합)가 반복 실행될 경우 중복으로 판단합니다.  
+  이 중복 쿼리 수가 `max` 값을 초과하면 테스트는 실패하게 됩니다.
+
+> 루프 내 동일 SELECT 반복, 실수로 발생한 N+1 문제 등을 조기에 감지하는 데 유용합니다.
 
 ### `@ExpectDetachedAccess`
 
@@ -137,6 +153,7 @@ test {
 @ExpectTime(500)                     // ✅ 성공
 @ExpectNoTx(strict = false)          // ✅ 성공
 @ExpectNoDb                          // ❌ 실패
+@ExpectDuplicateQuery                // ❌ 실패
 void testCombinedAssertions() {
     User user = new User("Alice", "alice@example.com");
     user.addRole(new Role("ADMIN"));
@@ -213,6 +230,8 @@ UserRepositoryTest > testCombinedAssertions() STANDARD_OUT
     Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:47
     --------------------------------------------------------
     [QueryKeeper] ▶ ExpectNoDb X FAILED - 7 DB queries were executed in testCombinedAssertions()
+    [QueryKeeper] ▶ ExpectDuplicateQuery X FAILED - Found 1 duplicate queries (allowed: 0)
+      • Duplicate [2x] → select u1_0.id,u1_0.email,u1_0.name from users u1_0
 ```
 
 ---

@@ -11,11 +11,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.querykeeper.annotation.ExpectDetachedAccess;
+import com.querykeeper.annotation.ExpectDuplicateQuery;
 import com.querykeeper.annotation.ExpectNoDb;
 import com.querykeeper.annotation.ExpectQuery;
 import com.querykeeper.annotation.ExpectTime;
 import com.querykeeper.collector.QueryKeeperContext;
 import com.querykeeper.engine.DetachedAccessAssertionEngine;
+import com.querykeeper.engine.DuplicateQueryAssertionEngine;
 import com.querykeeper.engine.NoDbAssertionEngine;
 import com.querykeeper.engine.NoTxAssertionEngine;
 import com.querykeeper.engine.QueryAssertionEngine;
@@ -74,10 +76,16 @@ public class QueryKeeperExtension implements BeforeTestExecutionCallback, AfterT
             ExpectDetachedAccess expectDetachedAccess = method.getAnnotation(ExpectDetachedAccess.class);
             if (expectDetachedAccess != null) {
                 DetachedAccessAssertionEngine.assertDetachedAccess(
-                    QueryKeeperContext.getCurrent(),
-                    finalLog,
-                    finalFailures
-                );
+                        QueryKeeperContext.getCurrent(),
+                        finalLog,
+                        finalFailures);
+            }
+
+            // ExpectDuplicateQuery
+            ExpectDuplicateQuery expectDuplicateQuery = method.getAnnotation(ExpectDuplicateQuery.class);
+            if (expectDuplicateQuery != null) {
+                int max = expectDuplicateQuery.max();
+                DuplicateQueryAssertionEngine.assertNoExcessiveDuplicates(method, max, finalLog, finalFailures);
             }
 
         } finally {

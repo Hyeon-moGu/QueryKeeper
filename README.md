@@ -5,8 +5,9 @@ QueryKeeper is a lightweight testing utility for verifying SQL activity in `Spri
 It uses intuitive annotations to monitor **query count**, **execution time**, and **unintended DB access**,
 Without relying on external agents or JDBC proxies.
 
+> ✅ No setup required. just add the library and annotate your tests (only `@EnableQueryKeeper` needed) <br>
 > ✅ Catch performance regressions during refactoring <br>
-> ✅ Use annotations like `@ExpectQuery`, `@ExpectDetachedAccess`, `@ExpectTime` <br>
+> ✅ Use annotations like `@ExpectQuery`, `@ExpectDetachedAccess`, `@ExpectDuplicateQuery` <br>
 > ✅ Detect N+1 queries, unexpected lazy loads, and slow queries during test execution <br>
 > ✅ No agents, no proxies <br>
 
@@ -20,6 +21,7 @@ Without relying on external agents or JDBC proxies.
 |-------------------------------|------------------------------------------------------------------------------------------|
 | `@EnableQueryKeeper`          | Activates all QueryKeeper test assertions                                                |
 | `@ExpectQuery`                | Tracks and verifies the number of executed SQL queries during the test                   |
+| `@ExpectDuplicateQuery`       | Fails the test if identical SQL queries (including parameters) are executed multiple times |
 | `@ExpectDetachedAccess`       | Catches LazyInitializationException caused by accessing lazy fields outside a transaction|
 | `@ExpectTime`                 | Asserts that the test completes within a specified time limit                            |
 | `@ExpectNoDb`                 | Fails if any database interaction (e.g., query, update) is detected                      |
@@ -38,6 +40,16 @@ Logs and optionally verifies SQL queries executed during the test.
 By default, this annotation logs all executed SQL queries along with their parameters and execution times.
 If one or more expected counts (select, insert, etc.) are specified (i.e., ≥ 0), the test will fail if the actual counts don't match. <br>
 > All SQL queries including `SELECT NEXT VALUE FOR` (e.g. for sequences) are counted.  <br>
+
+### `@ExpectDuplicateQuery`
+Detects and fails if the same SQL query is executed multiple times with identical parameters.
+- **Parameters:**
+  - `max` *(optional, default: 0)* — Maximum number of allowed duplicate queries
+- **How it works:**  
+  During test execution, QueryKeeper tracks each executed SQL statement along with its parameters.  
+  If any identical query (including parameters) is executed more than once, it counts as a duplicate.  
+  If the total number of duplicates exceeds the `max` value, the test fails.<br>
+> This is useful for detecting inefficient patterns such as repeated queries inside loops or accidental N+1 issues.<br>
 
 ### `@ExpectDetachedAccess`
 Detects unintended `LazyInitializationException` triggered by accessing lazy-loaded fields after the entity becomes detached.
@@ -127,6 +139,7 @@ test {
 @ExpectTime(500)                     // ✅ pass
 @ExpectNoTx(strict = false)          // ✅ pass
 @ExpectNoDb                          // ❌ fail
+@ExpectDuplicateQuery                // ❌ fail
 void testCombinedAssertions() {
     User user = new User("Alice", "alice@example.com");
     user.addRole(new Role("ADMIN"));
@@ -203,6 +216,8 @@ UserRepositoryTest > testCombinedAssertions() STANDARD_OUT
     Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:47
     --------------------------------------------------------
     [QueryKeeper] ▶ ExpectNoDb X FAILED - 7 DB queries were executed in testCombinedAssertions()
+    [QueryKeeper] ▶ ExpectDuplicateQuery X FAILED - Found 1 duplicate queries (allowed: 0)
+      • Duplicate [2x] → select u1_0.id,u1_0.email,u1_0.name from users u1_0
 ```
 
 ---

@@ -10,7 +10,8 @@ import java.lang.annotation.Target;
  * Asserts that no LazyInitializationException occurs during method execution.
  *
  * This annotation is used to detect improper access to lazy-loaded associations
- * outside of a transactional context (i.e., when the entity is in a detached state).
+ * outside of a transactional context (i.e., when the entity is in a detached
+ * state).
  *
  * <p>
  * LazyInitializationException typically indicates that a field marked for

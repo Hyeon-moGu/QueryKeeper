@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import com.querykeeper.annotation.EnableQueryKeeper;
 import com.querykeeper.annotation.ExpectDetachedAccess;
+import com.querykeeper.annotation.ExpectDuplicateQuery;
 import com.querykeeper.annotation.ExpectNoDb;
 import com.querykeeper.annotation.ExpectNoTx;
 import com.querykeeper.annotation.ExpectQuery;
@@ -36,6 +37,7 @@ class UserRepositoryTest {
     @ExpectTime(500)
     @ExpectNoTx(strict = false)
     @ExpectNoDb
+    @ExpectDuplicateQuery
     void testCombinedAssertions() {
         User user = new User("Alice", "alice@example.com");
         user.addRole(new Role("ADMIN"));
