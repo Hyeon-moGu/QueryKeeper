@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import com.querykeeper.annotation.ExpectQuery;
 import com.querykeeper.collector.QueryKeeperContext;
 import com.querykeeper.collector.QueryLog;
-import com.querykeeper.reporter.QueryReporter;
 
 public class QueryAssertionEngine {
 
@@ -31,60 +30,61 @@ public class QueryAssertionEngine {
                 expectation.delete() >= 0;
 
         if (!hasExpectation) {
-            QueryReporter.printReport(methodName, true);
+            printQueryReport(methodName, logs, true);
             return false;
         }
 
-        sb.append("\n[QueryKeeper] ▶ ExpectQuery X FAILED\n");
-        sb.append("--------------------------------------------------------\n");
-
-        sb.append("Expected - (");
-        if (expectation.select() >= 0)
-            sb.append("SELECT: ").append(expectation.select()).append(", ");
-        if (expectation.insert() >= 0)
-            sb.append("INSERT: ").append(expectation.insert()).append(", ");
-        if (expectation.update() >= 0)
-            sb.append("UPDATE: ").append(expectation.update()).append(", ");
-        if (expectation.delete() >= 0)
-            sb.append("DELETE: ").append(expectation.delete()).append(", ");
-        if (sb.charAt(sb.length() - 2) == ',')
-            sb.setLength(sb.length() - 2);
-        sb.append("), ");
-
-        sb.append("Actual - (");
-        if (expectation.select() >= 0)
-            sb.append("SELECT: ").append(select).append(", ");
-        if (expectation.insert() >= 0)
-            sb.append("INSERT: ").append(insert).append(", ");
-        if (expectation.update() >= 0)
-            sb.append("UPDATE: ").append(update).append(", ");
-        if (expectation.delete() >= 0)
-            sb.append("DELETE: ").append(delete).append(", ");
-        if (sb.charAt(sb.length() - 2) == ',')
-            sb.setLength(sb.length() - 2);
-        sb.append(")\n");
-
-        sb.append("--------------------------------------------------------\n");
-        sb.append(" Total Queries: ").append(logs.size()).append("\n");
-        sb.append("--------------------------------------------------------\n");
-
-        int num = 1;
-        for (QueryLog log : logs) {
-            sb.append(num).append(". ").append("[").append(log.getType()).append("] (")
-                    .append(log.durationMs).append(" ms)\n");
-            sb.append("SQL     : ").append(log.sql.replaceAll("\n", " ")).append("\n");
-            if (!log.parameters.isEmpty()) {
-                sb.append("Params  : ").append(log.parameters).append("\n");
-            }
-            sb.append("Caller  : ").append(log.caller).append("\n");
-            sb.append("--------------------------------------------------------\n");
-            num++;
-        }
-
-        if ((expectation.select() >= 0 && select != expectation.select()) ||
+        boolean fail = (expectation.select() >= 0 && select != expectation.select()) ||
                 (expectation.insert() >= 0 && insert != expectation.insert()) ||
                 (expectation.update() >= 0 && update != expectation.update()) ||
-                (expectation.delete() >= 0 && delete != expectation.delete())) {
+                (expectation.delete() >= 0 && delete != expectation.delete());
+
+        if (fail) {
+            sb.append("\n[QueryKeeper] ▶ ExpectQuery X FAILED\n");
+            sb.append("--------------------------------------------------------\n");
+
+            sb.append("Expected - (");
+            if (expectation.select() >= 0)
+                sb.append("SELECT: ").append(expectation.select()).append(", ");
+            if (expectation.insert() >= 0)
+                sb.append("INSERT: ").append(expectation.insert()).append(", ");
+            if (expectation.update() >= 0)
+                sb.append("UPDATE: ").append(expectation.update()).append(", ");
+            if (expectation.delete() >= 0)
+                sb.append("DELETE: ").append(expectation.delete()).append(", ");
+            if (sb.charAt(sb.length() - 2) == ',')
+                sb.setLength(sb.length() - 2);
+            sb.append("), ");
+
+            sb.append("Actual - (");
+            if (expectation.select() >= 0)
+                sb.append("SELECT: ").append(select).append(", ");
+            if (expectation.insert() >= 0)
+                sb.append("INSERT: ").append(insert).append(", ");
+            if (expectation.update() >= 0)
+                sb.append("UPDATE: ").append(update).append(", ");
+            if (expectation.delete() >= 0)
+                sb.append("DELETE: ").append(delete).append(", ");
+            if (sb.charAt(sb.length() - 2) == ',')
+                sb.setLength(sb.length() - 2);
+            sb.append(")\n");
+
+            sb.append("--------------------------------------------------------\n");
+            sb.append(" Total Queries: ").append(logs.size()).append("\n");
+            sb.append("--------------------------------------------------------\n");
+
+            int num = 1;
+            for (QueryLog log : logs) {
+                sb.append(num).append(". [").append(log.getType()).append("] (").append(log.durationMs)
+                        .append(" ms)\n");
+                sb.append("SQL     : ").append(log.sql.replaceAll("\n", " ")).append("\n");
+                if (!log.parameters.isEmpty()) {
+                    sb.append("Params  : ").append(log.parameters).append("\n");
+                }
+                sb.append("Caller  : ").append(log.caller).append("\n");
+                sb.append("--------------------------------------------------------\n");
+                num++;
+            }
 
             logger.error(sb.toString());
 
@@ -105,7 +105,37 @@ public class QueryAssertionEngine {
                         "\n[QueryKeeper] ▶ DELETE mismatch: expected=" + expectation.delete() + ", actual=" + delete);
             }
         }
-        QueryReporter.printReport(methodName, false);
+
+        printQueryReport(methodName, logs, false);
         return true;
+    }
+
+    private static void printQueryReport(String testName, List<QueryLog> logs, boolean skipped) {
+        StringBuilder sb = new StringBuilder();
+        int num = 1;
+
+        if (skipped) {
+            sb.append("[QueryKeeper] ▶ ExpectQuery (!) SKIPPED - ").append(testName)
+                    .append(", No expectations set, logging queries only.").append("\n");
+        } else {
+            sb.append("[QueryKeeper] ▶ ExpectQuery ✓ PASSED - ").append(testName).append("\n");
+        }
+
+        sb.append("--------------------------------------------------------\n");
+        sb.append("Total Queries: ").append(logs.size()).append("\n");
+        sb.append("--------------------------------------------------------\n");
+
+        for (QueryLog log : logs) {
+            sb.append(num).append(". [").append(log.getType()).append("] (").append(log.durationMs).append(" ms)\n");
+            sb.append("SQL     : ").append(log.sql.replaceAll("\n", " ")).append("\n");
+            if (!log.parameters.isEmpty()) {
+                sb.append("Params  : ").append(log.parameters).append("\n");
+            }
+            sb.append("Caller  : ").append(log.caller).append("\n");
+            sb.append("--------------------------------------------------------\n");
+            num++;
+        }
+
+        logger.info("\n{}", sb);
     }
 }

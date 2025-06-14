@@ -17,7 +17,20 @@ import org.springframework.stereotype.Component;
 public class LazyLoadExceptionCatcher {
     private static final Logger log = LoggerFactory.getLogger(LazyLoadExceptionCatcher.class);
 
-    @AfterThrowing(pointcut = "execution(* com..*(..))", throwing = "ex")
+    @AfterThrowing(pointcut = "(" +
+            "execution(* com..*(..)) || " +
+            "execution(* kr..*(..)) || " +
+            "execution(* io..*(..)) || " +
+            "execution(* net..*(..)) || " +
+            "execution(* me..*(..)) || " +
+            "execution(* dev..*(..)) || " +
+            "execution(* edu..*(..)) || " +
+            "execution(* example..*(..)) || " +
+            "execution(* my..*(..)) || " +
+            "execution(* test..*(..)) || " +
+            "execution(* core..*(..)) || " +
+            "execution(* xyz..*(..))" +
+            ") && !execution(* org.springframework..*(..))", throwing = "ex")
     public void afterThrowingLazy(Exception ex) {
         if (!(ex instanceof LazyInitializationException)) {
             return;

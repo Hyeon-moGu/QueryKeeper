@@ -13,4 +13,4 @@ publish:
 	./gradlew :querykeeper:publishToMavenLocal
 
 version:
-	@echo "Querykeeper version: 1.0.0"
+	@echo "Querykeeper version: 1.1.0"

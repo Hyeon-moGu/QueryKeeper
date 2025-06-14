@@ -108,13 +108,13 @@ make publish
 
 ```groovy
 dependencies {
-    testImplementation 'com.querykeeper:querykeeper:1.0.0'
+    testImplementation 'com.querykeeper:querykeeper:1.1.0'
 }
 ```
 
 #### B. 직접 JAR 파일 사용
 ```groovy
-testImplementation files('libs/querykeeper-1.0.0.jar')
+testImplementation files('libs/querykeeper-1.1.0.jar')
 ```
 
 ### 옵션: 테스트 결과 출력(build.gradle 추가)
@@ -234,7 +234,7 @@ UserRepositoryTest > testLazyLoad() STANDARD_OUT
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'com.querykeeper:querykeeper:1.0.0'
+    testImplementation 'com.querykeeper:querykeeper:1.1.0'
 }
 ```
 
