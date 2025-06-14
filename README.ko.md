@@ -4,6 +4,8 @@
 **QueryKeeper**는 `Spring Boot` + `JPA` 테스트 코드에서 실행되는 SQL 쿼리 수, 실행 시간, DB 접근 여부 등을 어노테이션 기반으로 검증하는 테스트 전용 라이브러리입니다.
 외부 APM이나 JDBC 프록시 없이, 순수 Java 코드로 구현되었습니다. 핵심 JDBC 구성 요소(`PreparedStatement`, `Connection`, `DataSource`)를 직접 감싸 낮은 수준에서 쿼리를 추적합니다.
 
+✔️ Java 8 ~ 17+, Spring Boot 2.7 ~ 3.2+, Hibernate 5.6 ~ 6.3+, JUnit 5.8+ 환경을 지원합니다.
+
 > ✅ 별도 설정 없이 바로 사용 가능. 테스트 클래스에 `@EnableQueryKeeper` 만 추가 <br>
 > ✅ 쿼리 성능 회귀를 테스트 단계에서 감지 <br>
 > ✅ `@ExpectQuery`, `@ExpectDetachedAccess`, `@ExpectTime`, `@ExpectDuplicateQuery` 같은 직관적인 어노테이션으로 구현 <br>
@@ -238,10 +240,10 @@ UserRepositoryTest > testCombinedAssertions() STANDARD_OUT
 
 ## 3️⃣ 권장 사용 환경
 
-* Java 17+
-* Spring Boot 2.7 ~ 3.2+
-* Hibernate 5.6 ~ 6.3+
-* JUnit 5.9+
+* Java 8 ~ Java 17+
+* Spring Boot 2.7.x ~ 3.2+
+* Hibernate 5.6.x ~ 6.3+
+* JUnit Jupiter 5.8+
 
 > 이 라이브러리는 Spring Boot + JPA 환경을 전제로 아래 의존성이 함께 있어야 정상적으로 동작합니다
 ```groovy

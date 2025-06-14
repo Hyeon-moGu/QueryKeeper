@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,9 +19,9 @@ import com.querykeeper.annotation.ExpectNoTx;
 import com.querykeeper.annotation.ExpectQuery;
 import com.querykeeper.annotation.ExpectTime;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-
+/**
+ * This test was verified on Java 8 with Spring Boot 2.7
+ */
 @SpringBootTest
 @EnableQueryKeeper
 class UserRepositoryTest {

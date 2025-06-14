@@ -73,10 +73,10 @@ public class DetachedAccessExceptionCatcher {
 
     private Class<?> resolveCollectionGenericType(Field field) {
         Type genericType = field.getGenericType();
-        if (genericType instanceof ParameterizedType pt) {
-            Type[] args = pt.getActualTypeArguments();
-            if (args.length > 0 && args[0] instanceof Class<?> argType) {
-                return argType;
+        if (genericType instanceof ParameterizedType) {
+            Type[] args = ((ParameterizedType) genericType).getActualTypeArguments();
+            if (args.length > 0 && args[0] instanceof Class<?>) {
+                return (Class<?>) args[0];
             }
         }
         return null;

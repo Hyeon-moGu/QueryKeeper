@@ -5,6 +5,8 @@ QueryKeeper is a lightweight testing utility for verifying SQL activity in `Spri
 It uses intuitive annotations to monitor **query count**, **execution time**, and **unintended DB access**,
 Without relying on external agents or JDBC proxies.
 
+✔️ Supports Java 8 ~ 17+, Spring Boot 2.7 ~ 3.2+, Hibernate 5.6 ~ 6.3, JUnit 5.8+
+
 > ✅ No setup required. just add the library and annotate your tests (only `@EnableQueryKeeper` needed) <br>
 > ✅ Catch performance regressions during refactoring <br>
 > ✅ Use annotations like `@ExpectQuery`, `@ExpectDetachedAccess`, `@ExpectDuplicateQuery` <br>
@@ -224,10 +226,10 @@ UserRepositoryTest > testCombinedAssertions() STANDARD_OUT
 
 ## 3️⃣ Recommended Environment
 
-* Java 17+
-* Spring Boot 2.7.x ~ Spring Boot 3.2+
-* Hibernate 5.6.x ~ Hibernate 6.3+
-* JUnit 5.9+
+* Java 8 ~ Java 17+
+* Spring Boot 2.7.x ~ 3.2+
+* Hibernate 5.6.x ~ 6.3+
+* JUnit Jupiter 5.8+
 
 > Note: This library is designed for Spring Boot + JPA environments.
 > Make sure the following dependencies are included in your project:
