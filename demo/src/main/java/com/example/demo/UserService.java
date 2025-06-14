@@ -11,7 +11,7 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    public void triggerLazyException() {
+    public void triggerDetachedAccess() {
         User user = new User("Alice", "alice@example.com");
         user.addRole(new Role("ADMIN"));
         userRepository.save(user);

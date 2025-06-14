@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.querykeeper.annotation.EnableQueryKeeper;
-import com.querykeeper.annotation.ExpectLazyLoad;
+import com.querykeeper.annotation.ExpectDetachedAccess;
 import com.querykeeper.annotation.ExpectNoDb;
 import com.querykeeper.annotation.ExpectNoTx;
 import com.querykeeper.annotation.ExpectQuery;
@@ -54,8 +54,8 @@ class UserRepositoryTest {
     }
 
     @Test
-    @ExpectLazyLoad(maxCount = 0)
-    void testLazyLoad() {
-        userService.triggerLazyException();
+    @ExpectDetachedAccess
+    void testDetachedAccess() {
+        userService.triggerDetachedAccess();
     }
 }

@@ -1,30 +1,34 @@
 package com.querykeeper.engine;
 
 import java.lang.reflect.Method;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.List;
 
 public class TimeAssertionEngine {
 
-    private static final Logger logger = LoggerFactory.getLogger(TimeAssertionEngine.class);
+    public static void assertExecutionTime(
+            Method method,
+            long duration,
+            long expected,
+            List<String> finalLog,
+            List<Throwable> finalFailures) {
 
-    public static void assertExecutionTime(Method method, long duration, long expected) {
         String methodName = method.getName();
 
         if (expected == 0) {
-            logger.warn("\n[QueryKeeper] ▶ ExpectTime (!) SKIPPED - {}() took {}ms (no threshold set)",
-                    methodName, duration);
+            finalLog.add("[QueryKeeper] ▶ ExpectTime (!) SKIPPED - " + methodName +
+                    "() took " + duration + "ms (no threshold set)");
             return;
         }
 
         if (duration > expected) {
-            logger.error("\n[QueryKeeper] ▶ ExpectTime X FAILED - {} took {}ms (expected <= {}ms)", methodName,
-                    duration, expected);
-            throw new AssertionError("Execution time exceeded: " + duration + "ms > " + expected + "ms");
+            String msg = "[QueryKeeper] ▶ ExpectTime X FAILED - " + methodName +
+                    " took " + duration + "ms (expected <= " + expected + "ms)";
+            finalLog.add(msg);
+            finalFailures.add(new AssertionError("Execution time exceeded: " +
+                    duration + "ms > " + expected + "ms"));
         } else {
-            logger.info("\n[QueryKeeper] ▶ ExpectTime ✓ PASSED - {} took {}ms (expected <= {}ms)", methodName,
-                    duration, expected);
+            finalLog.add("[QueryKeeper] ▶ ExpectTime ✓ PASSED - " + methodName +
+                    " took " + duration + "ms (expected <= " + expected + "ms)");
         }
     }
 }

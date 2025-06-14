@@ -14,8 +14,9 @@ import org.springframework.stereotype.Component;
 
 @Aspect
 @Component
-public class LazyLoadExceptionCatcher {
-    private static final Logger log = LoggerFactory.getLogger(LazyLoadExceptionCatcher.class);
+public class DetachedAccessExceptionCatcher {
+
+    private static final Logger log = LoggerFactory.getLogger(DetachedAccessExceptionCatcher.class);
 
     @AfterThrowing(pointcut = "(" +
             "execution(* com..*(..)) || " +
@@ -31,17 +32,16 @@ public class LazyLoadExceptionCatcher {
             "execution(* core..*(..)) || " +
             "execution(* xyz..*(..))" +
             ") && !execution(* org.springframework..*(..))", throwing = "ex")
-    public void afterThrowingLazy(Exception ex) {
-        if (!(ex instanceof LazyInitializationException)) {
+    public void afterThrowingDetachedAccess(Exception ex) {
+        if (!(ex instanceof LazyInitializationException))
             return;
-        }
 
         String message = ex.getMessage();
         Pattern p = Pattern.compile(".*: ([\\w\\.]+)\\.([\\w]+).*");
         java.util.regex.Matcher m = p.matcher(message);
 
         if (!m.matches()) {
-            log.error("\n[QueryKeeper] ▶ LazyLoadException X Unmatched message format: {}", message);
+            log.debug("[QueryKeeper] ▶ ExpectDetachedAccess X Unmatched format: {}", message);
             return;
         }
 
@@ -55,13 +55,20 @@ public class LazyLoadExceptionCatcher {
 
             if (targetType != null) {
                 String entityName = targetType.getSimpleName();
-                QueryKeeperContext.getCurrent().markLazyLoadException(entityName);
 
-                log.warn("\n[QueryKeeper] ▶ LazyLoadException (!) DETECTED - Entity: {}, Field: {}", className,
-                        fieldName);
+                String rootEntity = guessRootEntity(className);
+                String fullPath = rootEntity + "." + fieldName;
+
+                QueryKeeperContext.getCurrent().markDetachedAccess(
+                        entityName,
+                        fieldName,
+                        rootEntity,
+                        fullPath
+                );
+
             }
         } catch (Exception e) {
-            log.error("\n[QueryKeeper] ▶ LazyLoadException X FAILED to extract entity from: {}", message);
+            log.debug("[QueryKeeper] ▶ ExpectDetachedAccess X Failed to extract info from: {}", message);
         }
     }
 
@@ -74,5 +81,10 @@ public class LazyLoadExceptionCatcher {
             }
         }
         return null;
+    }
+
+    private String guessRootEntity(String fullClassName) {
+        int lastDot = fullClassName.lastIndexOf('.');
+        return lastDot >= 0 ? fullClassName.substring(lastDot + 1) : fullClassName;
     }
 }

@@ -1,7 +1,6 @@
 package com.querykeeper.collector;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -10,18 +9,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class QueryKeeperContext {
 
     private static final ThreadLocal<QueryKeeperContext> CURRENT = ThreadLocal.withInitial(QueryKeeperContext::new);
-    private static final ThreadLocal<List<QueryLog>> logs = ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadLocal<List<QueryLog>> QUERY_LOGS = ThreadLocal.withInitial(ArrayList::new);
 
-    private final Map<String, Integer> lazyLoadCounts = new ConcurrentHashMap<>();
-    private final Map<String, Boolean> lazyLoadExceptions = new ConcurrentHashMap<>();
-
-    public void markLazyLoadException(String entityName) {
-        lazyLoadExceptions.put(entityName, true);
-    }
-
-    public boolean hadLazyLoadException(String entityName) {
-        return lazyLoadExceptions.getOrDefault(entityName, false);
-    }
+    private final Map<String, DetachedAccessInfo> detachedAccessMap = new ConcurrentHashMap<>();
 
     public static QueryKeeperContext getCurrent() {
         return CURRENT.get();
@@ -29,28 +19,44 @@ public class QueryKeeperContext {
 
     public static void clear() {
         CURRENT.set(new QueryKeeperContext());
-        logs.set(new ArrayList<>());
+        QUERY_LOGS.set(new ArrayList<>());
     }
 
     public void log(QueryLog log) {
-        logs.get().add(log);
+        QUERY_LOGS.get().add(log);
     }
 
     public List<QueryLog> getLogs() {
-        return logs.get();
+        return QUERY_LOGS.get();
     }
 
-    public void registerLazyLoad(String entityName) {
-        lazyLoadCounts.merge(entityName, 1, Integer::sum);
+    public void markDetachedAccess(String entityName, String fieldName, String rootEntityName, String fullPath) {
+        detachedAccessMap.put(entityName, new DetachedAccessInfo(entityName, fieldName, rootEntityName, fullPath));
     }
 
-    public int getLazyLoadCount(String entityName) {
-        return lazyLoadCounts.getOrDefault(entityName, 0);
+    public DetachedAccessInfo getDetachedAccessInfo(String entityName) {
+        return detachedAccessMap.get(entityName);
     }
 
-    public Set<String> getAllEntitiesWithLazyLoad() {
-        Set<String> names = new HashSet<>(lazyLoadCounts.keySet());
-        names.addAll(lazyLoadExceptions.keySet());
-        return names;
+    public boolean hadDetachedAccess(String entityName) {
+        return detachedAccessMap.containsKey(entityName);
+    }
+
+    public Set<String> getEntitiesWithDetachedAccess() {
+        return detachedAccessMap.keySet();
+    }
+
+    public static class DetachedAccessInfo {
+        public final String entity;
+        public final String field;
+        public final String rootEntity;
+        public final String fullPath;
+
+        public DetachedAccessInfo(String entity, String field, String rootEntity, String fullPath) {
+            this.entity = entity;
+            this.field = field;
+            this.rootEntity = rootEntity;
+            this.fullPath = fullPath;
+        }
     }
 }

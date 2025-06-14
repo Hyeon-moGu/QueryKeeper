@@ -6,7 +6,7 @@ It uses intuitive annotations to monitor **query count**, **execution time**, an
 Without relying on external agents or JDBC proxies.
 
 > ✅ Catch performance regressions during refactoring <br>
-> ✅ Use annotations like `@ExpectQuery`, `@ExpectLazyLoad`, `@ExpectTime` <br>
+> ✅ Use annotations like `@ExpectQuery`, `@ExpectDetachedAccess`, `@ExpectTime` <br>
 > ✅ Detect N+1 queries, unexpected lazy loads, and slow queries during test execution <br>
 > ✅ No agents, no proxies <br>
 
@@ -16,14 +16,14 @@ Without relying on external agents or JDBC proxies.
 
 ## 1️⃣ Features
 
-| Annotation            | Description                                                                 |
-|----------------------|-----------------------------------------------------------------------------|
-| `@EnableQueryKeeper` | Activates all QueryKeeper test assertions                                |
-| `@ExpectQuery`         | Tracks and verifies the number of executed SQL queries during the test     |
-| `@ExpectLazyLoad`      | Detects unexpected lazy loading and captures LazyInitializationExceptions  |
-| `@ExpectTime`          | Asserts that the test completes within a specified time limit              |
-| `@ExpectNoDb`          | Fails if any database interaction (e.g., query, update) is detected        |
-| `@ExpectNoTx`          | Ensures the test runs outside of any transactional context                 |
+| Annotation                     | Description                                                                             |
+|-------------------------------|------------------------------------------------------------------------------------------|
+| `@EnableQueryKeeper`          | Activates all QueryKeeper test assertions                                                |
+| `@ExpectQuery`                | Tracks and verifies the number of executed SQL queries during the test                   |
+| `@ExpectDetachedAccess`       | Catches LazyInitializationException caused by accessing lazy fields outside a transaction|
+| `@ExpectTime`                 | Asserts that the test completes within a specified time limit                            |
+| `@ExpectNoDb`                 | Fails if any database interaction (e.g., query, update) is detected                      |
+| `@ExpectNoTx`                 | Ensures the test runs outside of any transactional context                               |
 
 ## Detailed Usage 
 
@@ -39,20 +39,13 @@ By default, this annotation logs all executed SQL queries along with their param
 If one or more expected counts (select, insert, etc.) are specified (i.e., ≥ 0), the test will fail if the actual counts don't match. <br>
 > All SQL queries including `SELECT NEXT VALUE FOR` (e.g. for sequences) are counted.  <br>
 
-### `@ExpectLazyLoad`
-Monitors lazy-loading behavior and optionally fails if unexpected access or exceptions occur.
-- **Parameters:**
-  - `entity` *(optional, default: "")* — Specific entity class name to monitor (e.g. `"User"`). If omitted, all entities are included.
-  - `maxCount` *(optional, default: 0)* — Maximum allowed number of lazy loads during the test
-  - `includeException` *(optional, default: true)* — Whether to fail the test when a `LazyInitializationException` is detected.
-
+### `@ExpectDetachedAccess`
+Detects unintended `LazyInitializationException` triggered by accessing lazy-loaded fields after the entity becomes detached.
+- **Parameters:** *(none)*
 - **How it works:**  
-This annotation detects when JPA entities lazily load related data at runtime. If the test accesses an uninitialized proxy or triggers a `LazyInitializationException`, it can be recorded and validated.
-It observes method executions and captures lazy-loading activity without requiring any changes to your application code.<br>
-Use this to catch unintended lazy loads and ensure that your entity relationships are explicitly fetched when needed. <br>
-> ⚠️ Lazy-loading is tracked via AOP. <br>
-> Make sure the lazy field access occurs inside a Spring-managed bean (e.g., a `@Service` method).  
-> Direct access from within the test method may not be detected.
+Captures and reports any `LazyInitializationException` during test execution, including the entity and field involved.<br>
+  This is useful for verifying that no lazy-loading occurs outside of a transactional context.<br>
+> ⚠️ It only detects invalid accesses that lead to `LazyInitializationException`. <br>
 
 ### `@ExpectTime`
 Ensures the test completes within the given time.
@@ -152,25 +145,31 @@ void testCombinedAssertions() {
 }
 
 @Test
-@ExpectLazyLoad(maxCount = 0)        // ❌ fail
-void testLazyLoad() {
-    userService.triggerLazyException();
+@ExpectDetachedAccess      // ❌ fail
+void testDetachedAccess() {
+    userService.triggerDetachedAccess();
 }
 ```
 
 ### Output Example
 
-> **Note**: Log format is simplified for clarity. In actual tests, timestamps and class names will appear in SLF4J format.
-
 ```text
+UserRepositoryTest > testDetachedAccess() STANDARD_OUT
+    2025-01-01T12:00:00.000+00:00  INFO 7475 --- [    Test worker] c.q.junit.QueryKeeperExtension           : 
+    [QueryKeeper] ▶ ExpectDetachedAccess X FAILED - Entity: Role
+      • Field: roles
+      • Access Path: User.roles
+      • Root Entity: User
+
 UserRepositoryTest > testCombinedAssertions() STANDARD_OUT
+    2025-01-01T12:00:00.000+00:00  INFO 7475 --- [    Test worker] c.q.junit.QueryKeeperExtension           : 
     [QueryKeeper] ▶ ExpectNoTx ✓ PASSED - No transaction in testCombinedAssertions()
-    [QueryKeeper] ▶ ExpectTime ✓ PASSED - testCombinedAssertions took 10ms (expected <= 500ms)
+    [QueryKeeper] ▶ ExpectTime ✓ PASSED - testCombinedAssertions took 8ms (expected <= 500ms)
     [QueryKeeper] ▶ ExpectQuery X FAILED
     --------------------------------------------------------
     Expected - (SELECT: 1, INSERT: 1), Actual - (SELECT: 4, INSERT: 3)
     --------------------------------------------------------
-     Total Queries: 7
+    Total Queries: 7
     --------------------------------------------------------
     1. [SELECT] (0 ms)
     SQL     : select next value for users_seq
@@ -180,7 +179,7 @@ UserRepositoryTest > testCombinedAssertions() STANDARD_OUT
     SQL     : select next value for roles_seq
     Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
     --------------------------------------------------------
-    3. [INSERT] (1 ms)
+    3. [INSERT] (0 ms)
     SQL     : insert into users (email,name,id) values (?,?,?)
     Params  : {1=alice@example.com, 2=Alice, 3=2}
     Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
@@ -190,12 +189,12 @@ UserRepositoryTest > testCombinedAssertions() STANDARD_OUT
     Params  : {1=ADMIN, 2=2, 3=2}
     Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
     --------------------------------------------------------
-    5. [INSERT] (1 ms)
+    5. [INSERT] (0 ms)
     SQL     : insert into roles (name,user_id,id) values (?,?,?)
     Params  : {1=USER, 2=2, 3=3}
     Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
     --------------------------------------------------------
-    6. [SELECT] (1 ms)
+    6. [SELECT] (0 ms)
     SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
     Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:44
     --------------------------------------------------------
@@ -203,16 +202,7 @@ UserRepositoryTest > testCombinedAssertions() STANDARD_OUT
     SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
     Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:47
     --------------------------------------------------------
-
     [QueryKeeper] ▶ ExpectNoDb X FAILED - 7 DB queries were executed in testCombinedAssertions()
-    [QueryKeeper] ▶ testCombinedAssertions failed with 2 assertion(s)
-    [QueryKeeper] ▶ SELECT mismatch: expected=1, actual=4
-    [QueryKeeper] ▶ Expected no DB access, but found 7 queries
-
-UserRepositoryTest > testLazyLoad() STANDARD_OUT
-    [QueryKeeper] ▶ LazyLoadException (!) DETECTED - Entity: com.example.demo.User, Field: roles
-    [QueryKeeper] ▶ testLazyLoad failed with 1 assertion(s)
-    [QueryKeeper] ▶ ExpectLazyLoad X FAILED - Entity: Role, Expected Max: 0, Actual: 0, Exception: true
 ```
 
 ---

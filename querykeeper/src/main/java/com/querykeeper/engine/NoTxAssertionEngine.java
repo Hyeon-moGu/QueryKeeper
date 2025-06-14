@@ -1,6 +1,7 @@
 package com.querykeeper.engine;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,7 @@ public class NoTxAssertionEngine {
 
     private static final Logger logger = LoggerFactory.getLogger(NoTxAssertionEngine.class);
 
-    public static void assertNoTransaction(Method method) {
+    public static void assertNoTransaction(Method method, List<String> finalLog, List<Throwable> finalFailures) {
         ExpectNoTx annotation = method.getAnnotation(ExpectNoTx.class);
         if (annotation == null)
             return;
@@ -23,10 +24,11 @@ public class NoTxAssertionEngine {
         boolean shouldFail = annotation.strict() ? active : (active && !readOnly);
 
         if (shouldFail) {
-            logger.error("\n[QueryKeeper] ▶ ExpectNoTx X FAILED - Transaction is active in {}()", method.getName());
-            throw new AssertionError("Expected no transaction, but one was active.");
+            String msg = "[QueryKeeper] ▶ ExpectNoTx X FAILED - Transaction is active in " + method.getName() + "()";
+            finalLog.add(msg);
+            finalFailures.add(new AssertionError(msg));
         } else {
-            logger.info("\n[QueryKeeper] ▶ ExpectNoTx ✓ PASSED - No transaction in {}()", method.getName());
+            finalLog.add("[QueryKeeper] ▶ ExpectNoTx ✓ PASSED - No transaction in " + method.getName() + "()");
         }
     }
 }

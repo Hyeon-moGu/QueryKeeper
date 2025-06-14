@@ -10,12 +10,12 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.querykeeper.annotation.ExpectLazyLoad;
+import com.querykeeper.annotation.ExpectDetachedAccess;
 import com.querykeeper.annotation.ExpectNoDb;
 import com.querykeeper.annotation.ExpectQuery;
 import com.querykeeper.annotation.ExpectTime;
 import com.querykeeper.collector.QueryKeeperContext;
-import com.querykeeper.engine.LazyLoadAssertionEngine;
+import com.querykeeper.engine.DetachedAccessAssertionEngine;
 import com.querykeeper.engine.NoDbAssertionEngine;
 import com.querykeeper.engine.NoTxAssertionEngine;
 import com.querykeeper.engine.QueryAssertionEngine;
@@ -26,90 +26,72 @@ public class QueryKeeperExtension implements BeforeTestExecutionCallback, AfterT
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace
             .create(QueryKeeperExtension.class);
 
+    private List<String> finalLog;
+    private List<Throwable> finalFailures;
+
     @Override
     public void beforeTestExecution(ExtensionContext context) {
-        Method method = context.getRequiredTestMethod();
-
+        finalLog = new ArrayList<>();
+        finalFailures = new ArrayList<>();
         QueryKeeperContext.clear();
+
+        Method method = context.getRequiredTestMethod();
         context.getStore(NAMESPACE).put("startTime", System.currentTimeMillis());
 
         // ExpectNoTx
-        NoTxAssertionEngine.assertNoTransaction(method);
+        NoTxAssertionEngine.assertNoTransaction(method, finalLog, finalFailures);
     }
 
     @Override
-    public void afterTestExecution(ExtensionContext context) throws Exception {
+    public void afterTestExecution(ExtensionContext context) {
         Method method = context.getRequiredTestMethod();
         Logger log = LoggerFactory.getLogger(QueryKeeperExtension.class);
 
-        ExtensionContext.Store store = context.getStore(NAMESPACE);
-        Long start = store.remove("startTime", Long.class);
-        long duration = (start != null) ? System.currentTimeMillis() - start : -1;
-
-        List<Throwable> failures = new ArrayList<>();
-
-        // ExpectTime
         try {
+            ExtensionContext.Store store = context.getStore(NAMESPACE);
+            Long start = store.remove("startTime", Long.class);
+            long duration = (start != null) ? System.currentTimeMillis() - start : -1;
+
+            // ExpectTime
             ExpectTime expectTime = method.getAnnotation(ExpectTime.class);
             if (expectTime != null) {
-                TimeAssertionEngine.assertExecutionTime(method, duration, expectTime.value());
+                TimeAssertionEngine.assertExecutionTime(method, duration, expectTime.value(), finalLog, finalFailures);
             }
-        } catch (Throwable t) {
-            failures.add(t);
-        }
 
-        // ExpectQuery
-        try {
+            // ExpectQuery
             ExpectQuery expectQuery = method.getAnnotation(ExpectQuery.class);
             if (expectQuery != null) {
-                QueryAssertionEngine.assertQueries(method, expectQuery);
+                QueryAssertionEngine.assertQueries(method, expectQuery, finalLog, finalFailures);
             }
-        } catch (Throwable t) {
-            failures.add(t);
-        }
 
-        // ExpectNoDb
-        try {
+            // ExpectNoDb
             ExpectNoDb expectNoDb = method.getAnnotation(ExpectNoDb.class);
             if (expectNoDb != null) {
-                NoDbAssertionEngine.assertNoDb(method);
+                NoDbAssertionEngine.assertNoDb(method, finalLog, finalFailures);
             }
-        } catch (Throwable t) {
-            failures.add(t);
+
+            // ExpectDetachedAccess
+            ExpectDetachedAccess expectDetachedAccess = method.getAnnotation(ExpectDetachedAccess.class);
+            if (expectDetachedAccess != null) {
+                DetachedAccessAssertionEngine.assertDetachedAccess(
+                    QueryKeeperContext.getCurrent(),
+                    finalLog,
+                    finalFailures
+                );
+            }
+
+        } finally {
+            QueryKeeperContext.clear();
         }
 
-        // ExpectLazyLoad
-        try {
-            ExpectLazyLoad config = method.getAnnotation(ExpectLazyLoad.class);
-            if (config != null) {
-                if (!config.entity().isEmpty()) {
-                    LazyLoadAssertionEngine.validate(
-                            config.entity(), config.maxCount(), config.includeException(),
-                            QueryKeeperContext.getCurrent());
-                } else {
-                    LazyLoadAssertionEngine.validateAll(
-                            config.maxCount(), config.includeException(),
-                            QueryKeeperContext.getCurrent());
-                }
-            }
-        } catch (Throwable t) {
-            failures.add(t);
-        }
+        log.info("\n{}", String.join("\n", finalLog));
 
-        if (!failures.isEmpty()) {
-            log.error("\n[QueryKeeper] ▶ {} failed with {} assertion(s)", method.getName(), failures.size());
-
-            for (Throwable failure : failures) {
-                log.error("{}", failure.getMessage());
-            }
-
-            String summary = failures.stream()
+        if (!finalFailures.isEmpty()) {
+            String summary = finalFailures.stream()
                     .map(Throwable::getMessage)
                     .reduce((a, b) -> a + "\n" + b)
                     .orElse("Multiple assertion errors");
-
             throw new AssertionError(summary);
         }
     }
-
 }

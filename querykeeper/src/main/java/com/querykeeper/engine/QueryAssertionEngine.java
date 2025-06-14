@@ -3,18 +3,15 @@ package com.querykeeper.engine;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.querykeeper.annotation.ExpectQuery;
 import com.querykeeper.collector.QueryKeeperContext;
 import com.querykeeper.collector.QueryLog;
 
 public class QueryAssertionEngine {
 
-    private static final Logger logger = LoggerFactory.getLogger(QueryAssertionEngine.class);
-
-    public static boolean assertQueries(Method method, ExpectQuery expectation) {
+    public static boolean assertQueries(Method method, ExpectQuery expectation,
+            List<String> finalLog,
+            List<Throwable> finalFailures) {
         String methodName = method.getName();
         List<QueryLog> logs = QueryKeeperContext.getCurrent().getLogs();
         StringBuilder sb = new StringBuilder();
@@ -30,7 +27,9 @@ public class QueryAssertionEngine {
                 expectation.delete() >= 0;
 
         if (!hasExpectation) {
-            printQueryReport(methodName, logs, true);
+            finalLog.add("[QueryKeeper] ▶ ExpectQuery (!) SKIPPED - " + methodName +
+                    ", No expectations set, logging queries only.");
+            appendQueryList(finalLog, logs);
             return false;
         }
 
@@ -40,7 +39,7 @@ public class QueryAssertionEngine {
                 (expectation.delete() >= 0 && delete != expectation.delete());
 
         if (fail) {
-            sb.append("\n[QueryKeeper] ▶ ExpectQuery X FAILED\n");
+            sb.append("[QueryKeeper] ▶ ExpectQuery X FAILED\n");
             sb.append("--------------------------------------------------------\n");
 
             sb.append("Expected - (");
@@ -67,75 +66,51 @@ public class QueryAssertionEngine {
                 sb.append("DELETE: ").append(delete).append(", ");
             if (sb.charAt(sb.length() - 2) == ',')
                 sb.setLength(sb.length() - 2);
-            sb.append(")\n");
+            sb.append(")");
 
-            sb.append("--------------------------------------------------------\n");
-            sb.append(" Total Queries: ").append(logs.size()).append("\n");
-            sb.append("--------------------------------------------------------\n");
-
-            int num = 1;
-            for (QueryLog log : logs) {
-                sb.append(num).append(". [").append(log.getType()).append("] (").append(log.durationMs)
-                        .append(" ms)\n");
-                sb.append("SQL     : ").append(log.sql.replaceAll("\n", " ")).append("\n");
-                if (!log.parameters.isEmpty()) {
-                    sb.append("Params  : ").append(log.parameters).append("\n");
-                }
-                sb.append("Caller  : ").append(log.caller).append("\n");
-                sb.append("--------------------------------------------------------\n");
-                num++;
-            }
-
-            logger.error(sb.toString());
+            finalLog.add(sb.toString());
+            appendQueryList(finalLog, logs);
 
             if (expectation.select() >= 0 && select != expectation.select()) {
-                throw new AssertionError(
-                        "\n[QueryKeeper] ▶ SELECT mismatch: expected=" + expectation.select() + ", actual=" + select);
+                finalFailures.add(new AssertionError(
+                        "[QueryKeeper] ▶ SELECT mismatch: expected=" + expectation.select() + ", actual=" + select));
             }
             if (expectation.insert() >= 0 && insert != expectation.insert()) {
-                throw new AssertionError(
-                        "\n[QueryKeeper] ▶ INSERT mismatch: expected=" + expectation.insert() + ", actual=" + insert);
+                finalFailures.add(new AssertionError(
+                        "[QueryKeeper] ▶ INSERT mismatch: expected=" + expectation.insert() + ", actual=" + insert));
             }
             if (expectation.update() >= 0 && update != expectation.update()) {
-                throw new AssertionError(
-                        "\n[QueryKeeper] ▶ UPDATE mismatch: expected=" + expectation.update() + ", actual=" + update);
+                finalFailures.add(new AssertionError(
+                        "[QueryKeeper] ▶ UPDATE mismatch: expected=" + expectation.update() + ", actual=" + update));
             }
             if (expectation.delete() >= 0 && delete != expectation.delete()) {
-                throw new AssertionError(
-                        "\n[QueryKeeper] ▶ DELETE mismatch: expected=" + expectation.delete() + ", actual=" + delete);
+                finalFailures.add(new AssertionError(
+                        "[QueryKeeper] ▶ DELETE mismatch: expected=" + expectation.delete() + ", actual=" + delete));
             }
+
+        } else {
+            finalLog.add("[QueryKeeper] ▶ ExpectQuery ✓ PASSED - " + methodName);
+            appendQueryList(finalLog, logs);
         }
 
-        printQueryReport(methodName, logs, false);
         return true;
     }
 
-    private static void printQueryReport(String testName, List<QueryLog> logs, boolean skipped) {
-        StringBuilder sb = new StringBuilder();
+    private static void appendQueryList(List<String> log, List<QueryLog> logs) {
+        log.add("--------------------------------------------------------");
+        log.add("Total Queries: " + logs.size());
+        log.add("--------------------------------------------------------");
+
         int num = 1;
-
-        if (skipped) {
-            sb.append("[QueryKeeper] ▶ ExpectQuery (!) SKIPPED - ").append(testName)
-                    .append(", No expectations set, logging queries only.").append("\n");
-        } else {
-            sb.append("[QueryKeeper] ▶ ExpectQuery ✓ PASSED - ").append(testName).append("\n");
-        }
-
-        sb.append("--------------------------------------------------------\n");
-        sb.append("Total Queries: ").append(logs.size()).append("\n");
-        sb.append("--------------------------------------------------------\n");
-
-        for (QueryLog log : logs) {
-            sb.append(num).append(". [").append(log.getType()).append("] (").append(log.durationMs).append(" ms)\n");
-            sb.append("SQL     : ").append(log.sql.replaceAll("\n", " ")).append("\n");
-            if (!log.parameters.isEmpty()) {
-                sb.append("Params  : ").append(log.parameters).append("\n");
+        for (QueryLog q : logs) {
+            log.add(num + ". [" + q.getType() + "] (" + q.durationMs + " ms)");
+            log.add("SQL     : " + q.sql.replaceAll("\n", " "));
+            if (!q.parameters.isEmpty()) {
+                log.add("Params  : " + q.parameters);
             }
-            sb.append("Caller  : ").append(log.caller).append("\n");
-            sb.append("--------------------------------------------------------\n");
+            log.add("Caller  : " + q.caller);
+            log.add("--------------------------------------------------------");
             num++;
         }
-
-        logger.info("\n{}", sb);
     }
 }

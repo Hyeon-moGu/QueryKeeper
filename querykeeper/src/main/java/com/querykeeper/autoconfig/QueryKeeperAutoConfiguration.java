@@ -6,7 +6,7 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.querykeeper.collector.LazyLoadExceptionCatcher;
+import com.querykeeper.collector.DetachedAccessExceptionCatcher;
 import com.querykeeper.collector.LoggingDataSource;
 
 @Configuration
@@ -26,7 +26,7 @@ public class QueryKeeperAutoConfiguration {
     }
 
     @Bean
-    public LazyLoadExceptionCatcher lazyLoadExceptionCatcher() {
-        return new LazyLoadExceptionCatcher();
+    public DetachedAccessExceptionCatcher detachedAccessExceptionCatcher() {
+        return new DetachedAccessExceptionCatcher();
     }
 }
