@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="QueryKeeper_logo.png" alt="QueryKeeper Logo" width="300"/>
+</p>
+
 # 🌱 QueryKeeper
 **SQL Query Monitoring for JPA Tests (Annotation-driven, Lightweight)**
 
