@@ -1,149 +1,122 @@
 # 🌱 QueryKeeper
-**SQL Query Monitoring for JPA Tests (Annotation-driven, Lightweight)**
+**JPA 쿼리 실행 검증 및 성능 테스트를 위한 어노테이션 라이브러리**
 
-QueryKeeper is a lightweight testing utility for verifying SQL activity in `Spring Boot` + `JPA` projects.  
-It uses intuitive annotations to monitor **query count**, **execution time**, and **unintended DB access**,
-Without relying on external agents or JDBC proxies.
+**QueryKeeper**는 `Spring Boot` + `JPA` 테스트 코드에서 실행되는 SQL 쿼리 수, 실행 시간, DB 접근 여부 등을 어노테이션 기반으로 검증하는 테스트 전용 라이브러리입니다.
+외부 APM이나 JDBC 프록시 없이, 순수 Java 코드로 구현되었습니다. 핵심 JDBC 구성 요소(`PreparedStatement`, `Connection`, `DataSource`)를 직접 감싸 낮은 수준에서 쿼리를 추적합니다.
 
-✔️ Supports Java 8 ~ 17+, Spring Boot 2.7 ~ 3.2+, Hibernate 5.6 ~ 6.3, JUnit 5.8+
+✔️ Java 8 ~ 17+, Spring Boot 2.7 ~ 3.2+, Hibernate 5.6 ~ 6.3+, JUnit 5.8+ 환경을 지원합니다.
 
-> ✅ No setup required. just add the library and annotate your tests (only `@EnableQueryKeeper` needed) <br>
-> ✅ Catch performance regressions during refactoring <br>
-> ✅ Use annotations like `@ExpectQuery`, `@ExpectDetachedAccess`, `@ExpectDuplicateQuery` <br>
-> ✅ Detect N+1 queries, unexpected lazy loads, and slow queries during test execution <br>
-> ✅ No agents, no proxies <br>
-
-🇰🇷 [Korean](./README.ko.md)
+> ✅ 별도 설정 없이 바로 사용 가능. 테스트 클래스에 `@EnableQueryKeeper` 만 추가 <br>
+> ✅ 쿼리 성능 회귀를 테스트 단계에서 감지 <br>
+> ✅ `@ExpectQuery`, `@ExpectDetachedAccess`, `@ExpectTime`, `@ExpectDuplicateQuery` 같은 직관적인 어노테이션으로 구현 <br>
+> ✅ `N+1 문제`, `불필요한 DB 호출`, `느린 쿼리`를 테스트 중 탐지 <br>
+> ✅ `PreparedStatement`, `Connection` 및 `DataSource`를 직접 래핑 <br>
 
 ---
 
-## 1️⃣ Features
+## 1️⃣ 기능 소개
 
-| Annotation                     | Description                                                                             |
-|-------------------------------|------------------------------------------------------------------------------------------|
-| `@EnableQueryKeeper`          | Activates all QueryKeeper test assertions                                                |
-| `@ExpectQuery`                | Tracks and verifies the number of executed SQL queries during the test                   |
-| `@ExpectDuplicateQuery`       | Fails the test if identical SQL queries (including parameters) are executed multiple times |
-| `@ExpectDetachedAccess`       | Catches LazyInitializationException caused by accessing lazy fields outside a transaction|
-| `@ExpectTime`                 | Asserts that the test completes within a specified time limit                            |
-| `@ExpectNoDb`                 | Fails if any database interaction (e.g., query, update) is detected                      |
-| `@ExpectNoTx`                 | Ensures the test runs outside of any transactional context                               |
+| 어노테이션                   | 설명                                                                          |
+|---------------------------|------------------------------------------------------------------------------|
+| `@EnableQueryKeeper`      | 모든 QueryKeeper 기능을 활성화                                                   |
+| `@ExpectQuery`            | 테스트 중 실시 수행된 추적의 개수를 로깅 및 검사                                        |
+| `@ExpectDuplicateQuery`   | 동일한 SQL 쿼리(파라미터 포함)가 반복 실행될 경우 테스트를 실패 처리                        |
+| `@ExpectDetachedAccess`   | 트랜잭션이 종료된 후 LAZY 필드에 접근하여 발생하는 `LazyInitializationException`를 감지   |
+| `@ExpectTime`             | 테스트 실행 시간 제한 (ms)                                                        |
+| `@ExpectNoDb`             | 테스트 중 DB 접근이 없어야 통과                                                     |
+| `@ExpectNoTx`             | 테스트 중 트랜잭션이 활성화되어 있으면 실패 (strict = true일 경우, 읽기 전용도 실패)          |
 
-## Detailed Usage 
+<details> <summary><strong>📘 어노테이션별 상세 설명 (클릭하여 펼치기)</strong></summary>
 
 ### `@ExpectQuery`
-Logs and optionally verifies SQL queries executed during the test.
-- **Parameters:**
-  - `select` *(optional, default: -1)* — Expected number of SELECT queries
-  - `insert` *(optional, default: -1)* — Expected number of INSERT queries
-  - `update` *(optional, default: -1)* — Expected number of UPDATE queries
-  - `delete` *(optional, default: -1)* — Expected number of DELETE queries
-- **How it works:**  
-By default, this annotation logs all executed SQL queries, including their fully inlined parameters, execution times, and call locations.
-If one or more expected counts (select, insert, etc.) are specified (i.e., ≥ 0), the test will fail if the actual counts do not match.<br>
-Regardless of expectation settings, a full list of queries is always printed in a standardized format, including type, duration, actual SQL (with parameters), and call site information.<br>
-This helps with debugging and performance auditing, even when no expectation is configured. <br>
-> All SQL queries including `SELECT NEXT VALUE FOR` (e.g. for sequences) are counted.  <br>
+
+테스트 중 실행된 SQL 쿼리 수를 기록하고 검증합니다.
+
+* **파라미터:**
+
+  * `select` *(기본값: -1)* — 예상 SELECT 쿼리 수
+  * `insert` *(기본값: -1)* — 예상 INSERT 쿼리 수
+  * `update` *(기본값: -1)* — 예상 UPDATE 쿼리 수
+  * `delete` *(기본값: -1)* — 예상 DELETE 쿼리 수
+
+* **동작 방식:**
+기본적으로 이 어노테이션은 실행된 모든 SQL 쿼리를 파라미터를 포함한 완전한 형태로 출력하며, 실행 시간과 호출 위치도 함께 로깅합니다.
+만약 `select`, `insert` 등의 기대 횟수(0 이상)가 지정된 경우, 실제 실행된 쿼리 수와 일치하지 않으면 테스트는 실패 처리됩니다.
+기대값이 설정되지 않더라도 모든 테스트에서 쿼리 목록은 항상 동일한 형식으로 출력됩니다.
+출력 내용은 쿼리 유형, 실행 시간(ms), 파라미터가 포함된 실제 SQL문, 호출 위치(클래스명#메서드:라인 번호) 등을 포함하며 디버깅이나 성능 분석에 매우 유용합니다.
 
 ### `@ExpectDuplicateQuery`
-Detects and fails if the same SQL query is executed multiple times with identical parameters.
-- **Parameters:**
-  - `max` *(optional, default: 0)* — Maximum number of allowed duplicate queries
-- **How it works:**  
-  During test execution, QueryKeeper tracks each executed SQL statement along with its parameters.  
-  If any identical query (including parameters) is executed more than once, it counts as a duplicate.  
-  If the total number of duplicates exceeds the `max` value, the test fails.<br>
-> This is useful for detecting inefficient patterns such as repeated queries inside loops or accidental N+1 issues.<br>
+
+동일한 SQL 쿼리(파라미터 포함)가 여러 번 실행될 경우 테스트를 실패 처리합니다.
+
+- **파라미터:**
+  - `max` *(선택, 기본값: 0)* — 허용되는 중복 쿼리의 최대 개수
+
+- **작동 방식:**  
+  테스트 실행 중 발생한 모든 SQL 쿼리와 그 파라미터를 추적하여,  
+  동일한 쿼리(문자열 및 파라미터 조합)가 반복 실행될 경우 중복으로 판단합니다.  
+  이 중복 쿼리 수가 `max` 값을 초과하면 테스트는 실패하게 됩니다.
+
+> 루프 내 동일 SELECT 반복, 실수로 발생한 N+1 문제 등을 조기에 감지하는 데 유용합니다.
 
 ### `@ExpectDetachedAccess`
-Detects unintended `LazyInitializationException` triggered by accessing lazy-loaded fields after the entity becomes detached.
-- **Parameters:** *(none)*
-- **How it works:**  
-Captures and reports any `LazyInitializationException` during test execution, including the entity and field involved.<br>
-  This is useful for verifying that no lazy-loading occurs outside of a transactional context.<br>
-> ⚠️ It only detects invalid accesses that lead to `LazyInitializationException`. <br>
+
+트랜잭션이 종료된 상태에서 지연 로딩 필드에 잘못 접근할 경우 발생하는 LazyInitializationException 을 감지합니다. 
+즉, JPA 엔티티가 detached 상태일 때 발생하는 잘못된 Lazy 필드 접근을 테스트 중 조기에 확인할 수 있습니다.
+
+* **파라미터:** 없음
+
+* **동작 방식:**
+  테스트 실행 중 발생한 `LazyInitializationException`을 AOP로 가로채어,
+  어떤 엔티티의 어떤 필드가 잘못 접근되었는지 기록합니다.
+  이를 통해 테스트에서 예상치 못한 Lazy 접근을 빠르게 감지할 수 있습니다.
+
+> ⚠️ 트랜잭션 외부에서의 비정상적인 Lazy 접근(LazyInitializationException) 만 탐지합니다.
 
 ### `@ExpectTime`
-Ensures the test completes within the given time.
 
-- **Parameters:**
-  - `value` *(required)* — Maximum allowed execution time in milliseconds
+테스트가 지정된 시간 내에 완료되어야 합니다.
 
-- **How it works:**  
- Measures total execution time of the test method, including all setup and database operations. Useful for catching performance regressions. <br>
+* **파라미터:**
+
+  * `value` *(필수)* — 허용되는 최대 테스트 실행 시간 (ms 단위)
+
+* **동작 방식:**
+  테스트 실행 전체 시간(설정, DB 쿼리 등 포함)을 측정하며, 설정한 시간 이상 소요되면 실패합니다.
 
 ### `@ExpectNoDb`
 
-Asserts that no database queries are executed.
+테스트 중 어떤 형태의 데이터베이스 접근도 없어야 합니다.
 
-- **Parameters:** *(none)*
+* **파라미터:** 없음
 
-- **How it works:**  
-  If any query (SELECT, INSERT, etc.) is executed, the test fails. Helpful for validating pure logic or cache-layer tests. <br>
+* **동작 방식:**
+  SELECT, INSERT, UPDATE, DELETE 등 모든 쿼리 실행을 감지하며, 단 하나라도 발생하면 실패합니다.
+  순수 로직 또는 캐시 단위 테스트에 유용합니다.
 
 ### `@ExpectNoTx`
-Ensures the test runs outside of a transaction.
 
-- **Parameters:**
-  - `strict` *(optional, default: true)* — If `true`, read-only transactions are also disallowed
+테스트가 트랜잭션 외부에서 실행되어야 함을 검증합니다.
 
-- **How it works:**  
-  Detects if a transaction is active during test execution. With `strict=true`, even `@Transactional(readOnly = true)` will cause the test to fail. <br>
----
+* **파라미터:**
 
-## 2️⃣ Installation
+  * `strict` *(기본값: true)* — `readOnly` 트랜잭션까지 금지할지 여부
 
-### Logging Note
+* **동작 방식:**
+  테스트 실행 중 활성 트랜잭션이 존재하는지 확인합니다. `strict=true`인 경우, `@Transactional(readOnly = true)`도 실패 처리됩니다.
+  </details>
 
-QueryKeeper uses SLF4J for logging.  
-If you're using Spring Boot, no action is needed (Logback is included by default).  
-For non-Spring Boot environments, be sure to include a compatible SLF4J backend:
+#### 코드 예시
 
-```groovy
-runtimeOnly 'ch.qos.logback:logback-classic:1.4.14'
-```
-
-### A. Publish to local Maven repository
-
-```bash
-make publish
-```
-
-```groovy
-dependencies {
-    testImplementation 'com.querykeeper:querykeeper:1.1.0'
-}
-```
-
-### B. Use standalone JAR
-
-```groovy
-testImplementation files('libs/querykeeper-1.1.0.jar')
-```
-
-### Optional: Enhanced test logging configuration (in build.gradle)
-```groovy
-test {
-    useJUnitPlatform()
-
-    testLogging {
-        events "passed", "skipped", "failed"
-        showStandardStreams = true
-    }
-}
-```
-
-### Code Example
-
-> **Note**: This example intentionally triggers some annotation failures to showcase QueryKeeper’s detection features
+> 아래 예시는 일부 테스트가 실패하도록 설계되어 있습니다.
 
 ```java
 @Test
-@ExpectQuery(select = 1, insert = 1) // ❌ fail
-@ExpectTime(500)                     // ✅ pass
-@ExpectNoTx(strict = false)          // ✅ pass
-@ExpectNoDb                          // ❌ fail
-@ExpectDuplicateQuery                // ❌ fail
+@ExpectQuery(select = 1, insert = 1) // ❌ 실패
+@ExpectTime(500)                     // ✅ 성공
+@ExpectNoTx(strict = false)          // ✅ 성공
+@ExpectNoDb                          // ❌ 실패
+@ExpectDuplicateQuery                // ❌ 실패
 void testCombinedAssertions() {
     User user = new User("Alice", "alice@example.com");
     user.addRole(new Role("ADMIN"));
@@ -162,13 +135,13 @@ void testCombinedAssertions() {
 }
 
 @Test
-@ExpectDetachedAccess      // ❌ fail
+@ExpectDetachedAccess      // ❌ 실패
 void testDetachedAccess() {
     userService.triggerDetachedAccess();
 }
 ```
 
-### Output Example
+#### 출력 예시
 
 ```text
 UserRepositoryTest > testDetachedAccess() STANDARD_OUT
@@ -227,15 +200,57 @@ UserRepositoryTest > testCombinedAssertions() STANDARD_OUT
 
 ---
 
-## 3️⃣ Recommended Environment
+## 2️⃣ 설치방법
+
+### 로깅 주의사항
+
+Querykeeper은 로그 출력을 위해 SLF4J를 사용합니다.  
+Spring Boot를 사용하는 경우 별도 설정이 필요하지 않습니다 (`spring-boot-starter-logging`에 포함)<br>
+Spring Boot가 아닌 환경에서는 다음 의존성을 추가:
+
+```groovy
+runtimeOnly 'ch.qos.logback:logback-classic:1.4.14'
+```
+
+#### A. 로컬 Maven에 배포 후 사용
+
+```bash
+make publish
+```
+
+```groovy
+dependencies {
+    testImplementation 'com.querykeeper:querykeeper:1.1.0'
+}
+```
+
+#### B. 직접 JAR 파일 사용
+```groovy
+testImplementation files('libs/querykeeper-1.1.0.jar')
+```
+
+### 옵션: 테스트 결과 출력(build.gradle 추가)
+```groovy
+test {
+    useJUnitPlatform()
+
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+}
+```
+
+---
+
+## 3️⃣ 권장 사용 환경
 
 * Java 8 ~ Java 17+
 * Spring Boot 2.7.x ~ 3.2+
 * Hibernate 5.6.x ~ 6.3+
 * JUnit Jupiter 5.8+
 
-> Note: This library is designed for Spring Boot + JPA environments.
-> Make sure the following dependencies are included in your project:
+> 이 라이브러리는 Spring Boot + JPA 환경을 전제로 아래 의존성이 함께 있어야 정상적으로 동작합니다
 ```groovy
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -244,25 +259,3 @@ dependencies {
 }
 ```
 
----
-
-<p align="center">
-  <img src="QueryKeeper_logo.png" alt="QueryKeeper Logo" width="250"/>
-</p>
-
-<details>
-<summary>SEO</summary>
-spring boot jpa query count  <br>
-hibernate query assertion  <br>
-junit performance test for SQL  <br>
-springboot prevent n+1 queries  <br>
-jpa test query logging  <br>
-junit measure sql execution time  <br>
-test if service uses cache instead of db  <br>
-custom datasource jdbc tracking  <br>
-jdbc proxy alternative for JPA testing  <br>
-jpa query count assertion  <br>
-jpa lazyinitializationexception unit test  <br>
-spring boot test assert no sql query  <br>
-jpa fetch join verification test  <br>
-</details>
