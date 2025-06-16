@@ -2,6 +2,7 @@ package com.querykeeper.engine;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 
 import com.querykeeper.annotation.ExpectQuery;
 import com.querykeeper.collector.QueryKeeperContext;
@@ -104,13 +105,38 @@ public class QueryAssertionEngine {
         int num = 1;
         for (QueryLog q : logs) {
             log.add(num + ". [" + q.getType() + "] (" + q.durationMs + " ms)");
-            log.add("SQL     : " + q.sql.replaceAll("\n", " "));
+
+            String formattedSql = q.sql;
             if (!q.parameters.isEmpty()) {
-                log.add("Params  : " + q.parameters);
+                formattedSql = formatSqlWithParams(q.sql, q.parameters);
             }
+
+            log.add("SQL     : " + formattedSql);
             log.add("Caller  : " + q.caller);
             log.add("--------------------------------------------------------");
             num++;
         }
+    }
+
+    private static String formatSqlWithParams(String sql, Map<Integer, Object> params) {
+        if (!sql.contains("?"))
+            return sql;
+        StringBuilder result = new StringBuilder();
+        int paramIndex = 1;
+        int lastIndex = 0;
+
+        for (int i = 0; i < sql.length(); i++) {
+            if (sql.charAt(i) == '?') {
+                result.append(sql, lastIndex, i);
+
+                Object value = params.get(paramIndex++);
+                String replacement = (value instanceof Number) ? value.toString() : "'" + value + "'";
+                result.append(replacement);
+
+                lastIndex = i + 1;
+            }
+        }
+        result.append(sql.substring(lastIndex));
+        return result.toString();
     }
 }

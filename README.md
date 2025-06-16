@@ -39,8 +39,10 @@ Logs and optionally verifies SQL queries executed during the test.
   - `update` *(optional, default: -1)* — Expected number of UPDATE queries
   - `delete` *(optional, default: -1)* — Expected number of DELETE queries
 - **How it works:**  
-By default, this annotation logs all executed SQL queries along with their parameters and execution times.
-If one or more expected counts (select, insert, etc.) are specified (i.e., ≥ 0), the test will fail if the actual counts don't match. <br>
+By default, this annotation logs all executed SQL queries, including their fully inlined parameters, execution times, and call locations.
+If one or more expected counts (select, insert, etc.) are specified (i.e., ≥ 0), the test will fail if the actual counts do not match.<br>
+Regardless of expectation settings, a full list of queries is always printed in a standardized format, including type, duration, actual SQL (with parameters), and call site information.<br>
+This helps with debugging and performance auditing, even when no expectation is configured. <br>
 > All SQL queries including `SELECT NEXT VALUE FOR` (e.g. for sequences) are counted.  <br>
 
 ### `@ExpectDuplicateQuery`
@@ -177,49 +179,50 @@ UserRepositoryTest > testDetachedAccess() STANDARD_OUT
       • Root Entity: User
 
 UserRepositoryTest > testCombinedAssertions() STANDARD_OUT
-    2025-01-01T12:00:00.000+00:00  INFO 7475 --- [    Test worker] c.q.junit.QueryKeeperExtension           : 
+    2025-06-16 19:39:14.450  INFO 2484 --- [    Test worker] c.q.junit.QueryKeeperExtension           : 
     [QueryKeeper] ▶ ExpectNoTx ✓ PASSED - No transaction in testCombinedAssertions()
-    [QueryKeeper] ▶ ExpectTime ✓ PASSED - testCombinedAssertions took 8ms (expected <= 500ms)
+    [QueryKeeper] ▶ ExpectTime ✓ PASSED - testCombinedAssertions took 11ms (expected <= 500ms)
     [QueryKeeper] ▶ ExpectQuery X FAILED
     --------------------------------------------------------
-    Expected - (SELECT: 1, INSERT: 1), Actual - (SELECT: 4, INSERT: 3)
+    Expected - (SELECT: 1, INSERT: 1), Actual - (SELECT: 2, INSERT: 3)
     --------------------------------------------------------
-    Total Queries: 7
+    Total Queries: 8
     --------------------------------------------------------
-    1. [SELECT] (0 ms)
-    SQL     : select next value for users_seq
-    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
+    1. [OTHER] (0 ms)
+    SQL     : call next value for hibernate_sequence
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:48
     --------------------------------------------------------
-    2. [SELECT] (0 ms)
-    SQL     : select next value for roles_seq
-    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
+    2. [OTHER] (0 ms)
+    SQL     : call next value for hibernate_sequence
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:48
     --------------------------------------------------------
-    3. [INSERT] (0 ms)
-    SQL     : insert into users (email,name,id) values (?,?,?)
-    Params  : {1=alice@example.com, 2=Alice, 3=2}
-    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
+    3. [OTHER] (0 ms)
+    SQL     : call next value for hibernate_sequence
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:48
     --------------------------------------------------------
     4. [INSERT] (0 ms)
-    SQL     : insert into roles (name,user_id,id) values (?,?,?)
-    Params  : {1=ADMIN, 2=2, 3=2}
-    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
+    SQL     : insert into users (email, name, id) values ('alice@example.com', 'Alice', 3)
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:48
     --------------------------------------------------------
     5. [INSERT] (0 ms)
-    SQL     : insert into roles (name,user_id,id) values (?,?,?)
-    Params  : {1=USER, 2=2, 3=3}
-    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:43
+    SQL     : insert into roles (name, user_id, id) values ('ADMIN', 3, 4)
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:48
     --------------------------------------------------------
-    6. [SELECT] (0 ms)
-    SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
-    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:44
+    6. [INSERT] (0 ms)
+    SQL     : insert into roles (name, user_id, id) values ('USER', 3, 5)
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:48
     --------------------------------------------------------
     7. [SELECT] (0 ms)
-    SQL     : select u1_0.id,u1_0.email,u1_0.name from users u1_0
-    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:47
+    SQL     : select user0_.id as id1_1_, user0_.email as email2_1_, user0_.name as name3_1_ from users user0_
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:49
     --------------------------------------------------------
-    [QueryKeeper] ▶ ExpectNoDb X FAILED - 7 DB queries were executed in testCombinedAssertions()
+    8. [SELECT] (0 ms)
+    SQL     : select user0_.id as id1_1_, user0_.email as email2_1_, user0_.name as name3_1_ from users user0_
+    Caller  : com.example.demo.UserRepositoryTest#testCombinedAssertions:52
+    --------------------------------------------------------
+    [QueryKeeper] ▶ ExpectNoDb X FAILED - 8 DB queries were executed in testCombinedAssertions()
     [QueryKeeper] ▶ ExpectDuplicateQuery X FAILED - Found 1 duplicate queries (allowed: 0)
-      • Duplicate [2x] → select u1_0.id,u1_0.email,u1_0.name from users u1_0
+      • Duplicate [2x] → select user0_.id as id1_1_, user0_.email as email2_1_, user0_.name as name3_1_ from users user0_
 ```
 
 ---
