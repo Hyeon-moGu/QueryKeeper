@@ -111,33 +111,40 @@
 > 아래 예시는 일부 테스트가 실패하도록 설계되어 있습니다.
 
 ```java
-@Test
-@ExpectQuery(select = 1, insert = 1) // ❌ 실패
-@ExpectTime(500)                     // ✅ 성공
-@ExpectNoTx(strict = false)          // ✅ 성공
-@ExpectNoDb                          // ❌ 실패
-@ExpectDuplicateQuery                // ❌ 실패
-void testCombinedAssertions() {
-    User user = new User("Alice", "alice@example.com");
-    user.addRole(new Role("ADMIN"));
-    user.addRole(new Role("USER"));
-    userRepository.save(user);
-    userRepository.findAll();
+@SpringBootTest
+@EnableQueryKeeper       // ✅ 기능활성화화
+class UserRepositoryTest {
 
-    entityManager.clear();
-    List<User> users = userRepository.findAll();
-    users.get(0).getRoles().size();
+        ....
 
-    int sum = 0;
-    for (int i = 0; i < 1000; i++)
-        sum += i;
-    assertThat(sum).isGreaterThan(0);
-}
-
-@Test
-@ExpectDetachedAccess      // ❌ 실패
-void testDetachedAccess() {
-    userService.triggerDetachedAccess();
+         @Test
+         @ExpectQuery(select = 1, insert = 1) // ❌ 실패
+         @ExpectTime(500)                     // ✅ 성공
+         @ExpectNoTx(strict = false)          // ✅ 성공
+         @ExpectNoDb                          // ❌ 실패
+         @ExpectDuplicateQuery                // ❌ 실패
+         void testCombinedAssertions() {
+             User user = new User("Alice", "alice@example.com");
+             user.addRole(new Role("ADMIN"));
+             user.addRole(new Role("USER"));
+             userRepository.save(user);
+             userRepository.findAll();
+         
+             entityManager.clear();
+             List<User> users = userRepository.findAll();
+             users.get(0).getRoles().size();
+         
+             int sum = 0;
+             for (int i = 0; i < 1000; i++)
+                 sum += i;
+             assertThat(sum).isGreaterThan(0);
+         }
+         
+         @Test
+         @ExpectDetachedAccess      // ❌ 실패
+         void testDetachedAccess() {
+             userService.triggerDetachedAccess();
+         }
 }
 ```
 
